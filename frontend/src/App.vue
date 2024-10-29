@@ -1,6 +1,18 @@
 <script setup>
+import { ref } from "vue"
 import { RouterLink, RouterView } from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
+import io from "socket.io-client";
+
+const PORT = 3000;
+// const url = `http://tk2-408-45029.vs.sakura.ne.jp:${PORT}`;
+const url = `localhost:${PORT}`;
+
+// const socket = io.connect(`127.0.0.1:${PORT}`);
+const socket = io.connect(url)
+const lightColor = ref("blue")
+
+const msg = "test message"
 </script>
 
 <template>
@@ -18,7 +30,7 @@ import HelloWorld from './components/HelloWorld.vue'
     </div>
   </header> -->
   <div>
-    <RouterView />
+    <RouterView :socket="socket"/>
   </div>
   <footer class="dark">
     <RouterLink to="/admin">admin</RouterLink>

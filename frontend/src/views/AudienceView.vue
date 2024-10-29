@@ -1,16 +1,16 @@
 <script setup>
 import { onMounted, ref, toRaw } from "vue"
 
-// const props = defineProps({
-//     socket: Object
-// });
+const props = defineProps({
+    socket: Object
+});
 
 const lightColor = ref("black")
 const msg = ref("DJ LIVE 2/16");
 const subMsg = ref("");
 const title = "Coming soon ...";
 
-// const socket = props.socket;
+const socket = props.socket;
 const isFlash = ref(false);
 
 onMounted(() => {
@@ -20,9 +20,9 @@ onMounted(() => {
 let currentInterval;
 let plainNewColor;
 
-/*
 socket.on("changeColor", (newColor) => {
   isFlash.value = false;
+  removeClass("instant-gradation");
 
   // proxyから通常のオブジェクトに変換
   plainNewColor = toRaw(newColor);
@@ -45,7 +45,6 @@ socket.on("changeColor", (newColor) => {
       break;
   }
 });
-*/
 
 /**
  * 高速点滅モード
@@ -82,20 +81,91 @@ const flash = (newColor) => {
  * @param {object} newColor 新しい色や表示設定
  */
 const gradation = (newColor) => {
-  // CSSを書き換え
-  // 色と速度 
+  const objColor = toRaw(newColor.color);
+  const deg = newColor.deg;
+  const speed = newColor.speed;
+  const colLen = objColor.length;
 
-  // css-selectorクラスをdivに追加
+  let col = [];
+
+  for (let i = 0; i < colLen; i++) {
+    console.log(objColor[i]);
+    col.push(objColor[i]);
+  }
+
+  console.log("gradation: ", deg, speed);
+  console.log(col);
+
+  // linear-gradientを作成
+  const gradientColors = col.join(', '); // 配列をカンマで結合
+
+  const element = document.getElementById("back-monitor");
+
+  // 前についているグラデーションの動的なクラスを削除
+  element.classList.remove("instant-gradation");
+
+  // 新しい<style>要素を作成
+  const style = document.createElement('style');
+
+  // HACK: これだとstyleがどんどん追加されて無駄に蓄積
+  // <style>タグ内のinstant-gradatioを毎回削除してから再度新しい内容で生成したい
+
+  // 動的に生成するCSSを定義
+  style.innerHTML = `
+  .instant-gradation {
+    background: linear-gradient(270deg, ${gradientColors});
+    background-size: 600% 600%;
+    -webkit-animation: AnimationName ${speed}s ease infinite;
+    -moz-animation: AnimationName ${speed}s ease infinite;
+    animation: AnimationName ${speed}s ease infinite;
+  }
+  
+  @keyframes AnimationName {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  `;
+
+  // <head>に<style>要素を追加
+  document.head.appendChild(style);
+
+  // クラスを付加
+  element.classList.add("instant-gradation");
 }
 
+const removeClass = (className) => {
+  const element = document.getElementById("back-monitor");
+  element.classList.remove(className);
+}
 // TODO: もし色が複数色になった場合は関数化するとよきかも
 const setColor = () => {
 
 }
+
+let flag = true;
+const onTestChange = () => {
+  const element = document.getElementById("back-monitor");
+
+  if (flag) {
+    element.classList.remove("css-selector");
+    element.classList.add("gradation-2");
+  }
+  else {
+    element.classList.remove("gradation-2");
+    element.classList.add("css-selector");
+  }
+
+  flag = !flag;
+}
 </script>
 
 <template>
-  <div class="home" :style="{backgroundColor: lightColor}">
+  <div
+    id="back-monitor"
+    class="home"
+    :style="{ backgroundColor: lightColor }"
+  >
     <div class="title pt-16">
       <h1>{{ msg }}</h1>
       <!-- <p>{{ subMsg }}</p> -->
@@ -132,7 +202,7 @@ const setColor = () => {
 
 /* グラデーション骨組み */
 .css-selector {
-  /* TODO: この背景色をJSでCSSを動的に変更したい */
+  /* TODO: この背景色をJSでCSSを動的に変更したい */  
   background: linear-gradient(270deg, #fa143f, #7b14fa, #2d9ccb);
   background-size: 600% 600%;
 
@@ -142,20 +212,31 @@ const setColor = () => {
   animation: AnimationName 13s ease infinite;
 }
 
+.gradation-2 {
+  /* TODO: この背景色をJSでCSSを動的に変更したい */  
+  background: linear-gradient(270deg, #14fad0, #7b14fa, #cbcb2d);
+  background-size: 600% 600%;
+
+  /* TODO: 速度も同様 */
+  -webkit-animation: AnimationName 13s ease infinite;
+  -moz-animation: AnimationName 13s ease infinite;
+  animation: AnimationName 13s ease infinite;
+}
+
 @-webkit-keyframes AnimationName {
-    0%{background-position:0% 14%}
-    50%{background-position:100% 87%}
-    100%{background-position:0% 14%}
+    0%{background-position:30% 0%}
+    50%{background-position:71% 100%}
+    100%{background-position:30% 0%}
 }
 @-moz-keyframes AnimationName {
-    0%{background-position:0% 14%}
-    50%{background-position:100% 87%}
-    100%{background-position:0% 14%}
+    0%{background-position:30% 0%}
+    50%{background-position:71% 100%}
+    100%{background-position:30% 0%}
 }
 @keyframes AnimationName {
-    0%{background-position:0% 14%}
-    50%{background-position:100% 87%}
-    100%{background-position:0% 14%}
+    0%{background-position:30% 0%}
+    50%{background-position:71% 100%}
+    100%{background-position:30% 0%}
 }
 
 /* ローディング */

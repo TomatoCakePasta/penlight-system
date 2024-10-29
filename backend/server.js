@@ -6,6 +6,10 @@ const PORT = 3000;
 
 const app = express();
 const httpServer = createServer(app);
+
+// TODO: 接続中のユーザ
+let countClients = 0;
+
 const io = new Server(httpServer, {
     cors: {
         origin: "*", // 許可したいオリジンを指定
@@ -19,7 +23,9 @@ app.get('/', (req, res) => {
 });
 
 io.on("connection", (socket) => {
-    console.log("Connect client");
+    console.log("connect client");
+    // クライアントに送信
+    socket.emit("enterClient");    
 
     socket.on("message", () => {
         console.log("Hello event");
@@ -34,6 +40,7 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         console.log("Disconnect client");
+        io.emit("exitClients");
     });
 })
 

@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from "vue"
 
-// const props = defineProps({
-//     socket: Object
-// });
+const props = defineProps({
+    socket: Object
+});
+
+const countClients = ref(0);
 
 // カラーパネルの配列
 // TODO: DBで動的にカラーパネルの追加修正を可能にする
@@ -21,7 +23,7 @@ const colorPanel = [
     "type": "home",
     "msg": "DJ Live 2/17",
     "subMsg": "Coming soon ...",
-    "label": ""
+    "label": "Home"
   },
   {
     "color": ["black"],
@@ -46,8 +48,18 @@ const colorPanel = [
     "subMsg": ""
   },
   {
-    "color": ["#3357FF", "#33FFF5"],
+    "color": ["#fa143f", "#7b14fa", "#2d9ccb"],
     "type": "gradation",
+    "speed": 13,
+    "deg": 60,
+    "msg": "",
+    "subMsg": ""
+  },
+  {
+    "color": ["#266400", "#d9da13", "#26b5c2"],
+    "type": "gradation",
+    "speed": 6,
+    "deg": 60,
     "msg": "",
     "subMsg": ""
   }
@@ -56,21 +68,65 @@ const colorPanel = [
 // 洗濯中のパネルを判別
 const selectedPanelId = ref(0);
 
-// const socket = props.socket;
+const socket = props.socket;
 
 const onChangeLight = (idx) => {
   // 新しい色をオーディエンスに送信
-  // socket.emit("changeColor", colorPanel[idx])
+  socket.emit("changeColor", colorPanel[idx])
 
   // 新しく選択したパネルを囲む
   selectedPanelId.value = idx
 }
+
+const setPanelColor = (colorObj) => {
+  const type = colorObj.type;
+  let ret = "";
+
+  switch(type) {
+    case "normal":
+      ret = colorObj.color;
+      break;
+
+    case "flash":
+      ret = getFlashPanel(colorObj.color);
+      break;
+
+    case "gradation":
+      ret = getGradationPanel(colorObj.color);
+      break;
+
+    default:
+      break;
+  }
+
+  return ret;
+}
+
+const getFlashPanel = (color) => {
+  return `repeating-linear-gradient(-45deg, #000000, #000000 5px, ${color} 5px, ${color} 10px)`;
+}
+
+const getGradationPanel = (colors) => {
+  const gradientColors = colors.join(', '); // 配列をカンマで結合
+
+  return `linear-gradient(270deg, ${gradientColors})`;
+}
+
+socket.on("enterClient", () => {
+  countClients.value++;
+});
+
+socket.on("exitClients", () => {
+  countClients.value--;
+});
+
 </script>
 
 <template>
   <div class="home">
     <div class="title pt-5">
       <h1>ライブ名</h1>
+      Audience : {{ countClients }}
     </div>
     <!-- リストでカラーパレット表示 -->
     <v-container>
@@ -84,13 +140,13 @@ const onChangeLight = (idx) => {
           >
             <v-card
               @click="onChangeLight(idx)"
-              :style="{ background: panel.color }"
+              :style="{ background: setPanelColor(panel) }"
             >
              <p 
               class="label"
               :style="(panel.type === 'home' || panel.color[0] === 'black') ? { background: 'gray', color: 'white' } : {}"
               >
-              {{ panel.label }} {{ panel.type }} 
+              {{ panel.label }} &nbsp;
              </p>
             </v-card>
           </div>
