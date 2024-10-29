@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue"
+import { nextTick, ref } from "vue"
 
 const props = defineProps({
     socket: Object
@@ -112,12 +112,36 @@ const getGradationPanel = (colors) => {
   return `linear-gradient(270deg, ${gradientColors})`;
 }
 
-socket.on("enterClient", () => {
-  countClients.value++;
+socket.on("enterClient", (count) => {
+  addClients(count);
 });
 
-socket.on("exitClients", () => {
-  countClients.value--;
+socket.on("exitClients", (count) => {
+  delClients(count);
+});
+
+const addClients = (count) => {
+  countClients.value = count;
+  nextTick(() => {
+    console.log(`enter user ${countClients.value}`);
+  });
+};
+
+const delClients = (count) => {
+  countClients.value = count;
+  nextTick(() => {
+    console.log(`exit user ${countClients.value}`);
+  });
+};
+
+const getClients = () => {
+  console.log("send getClients event");
+  socket.emit("getClients");
+}
+
+socket.on("getClients", (count) => {
+  countClients.value = count;
+  console.log(`now users ${countClients.value}`);
 });
 
 </script>
@@ -126,7 +150,6 @@ socket.on("exitClients", () => {
   <div class="home">
     <div class="title pt-5">
       <h1>ライブ名</h1>
-      Audience : {{ countClients }}
     </div>
     <!-- リストでカラーパレット表示 -->
     <v-container>
@@ -143,7 +166,7 @@ socket.on("exitClients", () => {
               :style="{ background: setPanelColor(panel) }"
             >
              <p 
-              class="label"
+              class="label pa-5 py-10"
               :style="(panel.type === 'home' || panel.color[0] === 'black') ? { background: 'gray', color: 'white' } : {}"
               >
               {{ panel.label }} &nbsp;
@@ -151,6 +174,14 @@ socket.on("exitClients", () => {
             </v-card>
           </div>
         </v-col>
+        <v-btn 
+          @click="getClients"
+          class="ml-5"
+        >
+        <p class="">
+          Audience : {{ countClients }}
+        </p>
+        </v-btn>
       </v-row>
     </v-container>
   </div>

@@ -8,7 +8,7 @@ const app = express();
 const httpServer = createServer(app);
 
 // TODO: 接続中のユーザ
-let countClients = 0;
+let countUser = 0;
 
 const io = new Server(httpServer, {
     cors: {
@@ -24,8 +24,9 @@ app.get('/', (req, res) => {
 
 io.on("connection", (socket) => {
     console.log("connect client");
+    countUser++;  
     // クライアントに送信
-    socket.emit("enterClient");    
+    socket.emit("enterClient", countUser);  
 
     socket.on("message", () => {
         console.log("Hello event");
@@ -40,7 +41,13 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         console.log("Disconnect client");
-        io.emit("exitClients");
+        countUser--;
+        io.emit("exitClients", countUser);
+    });
+
+    socket.on("getClients", () => {
+        console.log("event getClients", countUser);
+        io.emit("getClients", countUser);
     });
 })
 
