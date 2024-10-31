@@ -2,7 +2,7 @@
 import { onMounted, ref, toRaw } from "vue"
 
 const props = defineProps({
-    socket: Object
+    socket: Object,
 });
 
 const lightColor = ref("black")
@@ -158,6 +158,7 @@ const onTestChange = () => {
 
   flag = !flag;
 }
+
 </script>
 
 <template>

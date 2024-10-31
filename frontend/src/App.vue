@@ -6,7 +6,7 @@ import io from "socket.io-client";
 
 const PORT = 3000;
 // const url = `http://tk2-408-45029.vs.sakura.ne.jp:${PORT}`;
-const url = `localhost:${PORT}`;
+const url = `http://localhost:${PORT}`;
 
 // const socket = io.connect(`127.0.0.1:${PORT}`);
 const socket = io.connect(url)
@@ -30,11 +30,11 @@ const msg = "test message"
     </div>
   </header> -->
   <div>
-    <RouterView :socket="socket"/>
+    <RouterView :socket="socket" :url="url"/>
+    <footer class="dark">
+      <RouterLink to="/admin">&nbsp;&nbsp;&nbsp;</RouterLink>
+    </footer>
   </div>
-  <footer class="dark">
-    <RouterLink to="/admin">admin</RouterLink>
-  </footer>
 </template>
 <style scoped>
 .dark {

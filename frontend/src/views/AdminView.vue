@@ -1,11 +1,16 @@
 <script setup>
 import { nextTick, ref } from "vue"
+import axios from "axios";
 
 const props = defineProps({
-    socket: Object
+    socket: Object,
+    url: String
 });
 
 const countClients = ref(0);
+
+// baseURLを設定
+axios.defaults.baseURL = props.url;
 
 // カラーパネルの配列
 // TODO: DBで動的にカラーパネルの追加修正を可能にする
@@ -144,6 +149,17 @@ socket.on("getClients", (count) => {
   console.log(`now users ${countClients.value}`);
 });
 
+// dbから色を取得
+const getAllPanels = () => {
+  axios.get("/song-list")
+  .then((res) => {
+    alert(res.data);
+  })
+  .catch((err) => {
+    alert("ERROR");
+  });
+}
+
 </script>
 
 <template>
@@ -182,6 +198,7 @@ socket.on("getClients", (count) => {
           Audience : {{ countClients }}
         </p>
         </v-btn>
+        <v-btn @click="getAllPanels">GET</v-btn>
       </v-row>
     </v-container>
   </div>

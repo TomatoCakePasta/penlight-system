@@ -1,14 +1,44 @@
 import express from 'express';
 import { createServer } from "http";
 import { Server } from "socket.io";
+import sqlite3 from "sqlite3";
+import cors from "cors";
 
 const PORT = 3000;
 
 const app = express();
 const httpServer = createServer(app);
 
+// dbオブジェクトの取得
+const db = new sqlite3.Database("./panel_data.db", (err) => {
+    if (err) {
+        console.error("Failed to connect to databse:", err);
+    }
+    else {
+        console.log("Connected to the SQLite database.");
+    }
+});
+
 // TODO: 接続中のユーザ
 let countUser = 0;
+
+// ミドルウェア
+app.use(cors({
+    // 以下からのアクセスを許可
+    // 全てからのアクセスを許可したい
+    // origin: "192.168.0.10:5173",
+
+    // これでも動いてる?
+    origin: "*",
+
+    // 許可するアクセス
+    methods: ["GET", "POST"],
+    // 許可するデータ
+    allowedHeaders: ["Content-Type", "Authorization"],
+
+    // セッションCookieを許可するために必要らしい
+    credentials: true,
+}));
 
 const io = new Server(httpServer, {
     cors: {
@@ -19,6 +49,7 @@ const io = new Server(httpServer, {
 });
 
 app.get('/', (req, res) => {
+    console.log("HOME URL");
   res.send("HELLO NODEJS");
 });
 
@@ -50,6 +81,25 @@ io.on("connection", (socket) => {
         io.emit("getClients", countUser);
     });
 })
+
+app.get("/song-list", (req, res) => {
+    console.log("GET SONG LIST");
+    db.serialize(() => {
+        db.all("SELECT * FROM songs", (err, rows) => {
+            if (!err) {
+                const data = {
+                    content: rows
+                }
+                console.log("GET SONG LIST", data);
+                res.send({panels: data});
+            }
+            else {
+                console.error("Database query error:", err);
+                res.status(500);
+            }
+        })
+    })
+});
 
 httpServer.listen(PORT, () => {
     console.log("Server is running ", PORT);
