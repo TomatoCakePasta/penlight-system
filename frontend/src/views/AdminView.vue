@@ -32,7 +32,7 @@ const colorPanel = [
   },
   {
     "color": ["black"],
-    "type": "",
+    "type": "normal",
     "msg": "",
     "subMsg": "",
     "label": "Wait"
@@ -153,7 +153,8 @@ socket.on("getClients", (count) => {
 const getAllPanels = () => {
   axios.get("/song-list")
   .then((res) => {
-    alert(res.data);
+    alert(res.data.panels.content[0].artist);
+    console.log(res.data.panels.content[0]);
   })
   .catch((err) => {
     alert("ERROR");

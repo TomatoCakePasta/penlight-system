@@ -277,6 +277,7 @@ const onTestChange = () => {
   top: 0;
 }
 
+/* 最大文字数決めて先にclass用意 */
 .no1 {
   animation: foo 10s ease infinite, bar 5s linear infinite;
   animation-delay: 0.1s;
@@ -345,6 +346,36 @@ const onTestChange = () => {
 .no14 {
   animation: foo 10s ease infinite, bar 5s linear infinite;
   animation-delay: 1.4s;
+}
+
+.no15 {
+  animation: foo 10s ease infinite, bar 5s linear infinite;
+  animation-delay: 1.5s;
+}
+
+.no16 {
+  animation: foo 10s ease infinite, bar 5s linear infinite;
+  animation-delay: 1.6s;
+}
+
+.no17 {
+  animation: foo 10s ease infinite, bar 5s linear infinite;
+  animation-delay: 1.7s;
+}
+
+.no18 {
+  animation: foo 10s ease infinite, bar 5s linear infinite;
+  animation-delay: 1.8s;
+}
+
+.no19 {
+  animation: foo 10s ease infinite, bar 5s linear infinite;
+  animation-delay: 1.9s;
+}
+
+.no20 {
+  animation: foo 10s ease infinite, bar 5s linear infinite;
+  animation-delay: 2.0s;
 }
 
 @keyframes foo {

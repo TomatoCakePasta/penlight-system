@@ -19,7 +19,7 @@ const db = new sqlite3.Database("./panel_data.db", (err) => {
     }
 });
 
-// TODO: 接続中のユーザ
+// 接続中のユーザー
 let countUser = 0;
 
 // ミドルウェア
@@ -38,6 +38,7 @@ app.use(cors({
 
     // セッションCookieを許可するために必要らしい
     credentials: true,
+    // credentials: false,
 }));
 
 const io = new Server(httpServer, {
@@ -66,7 +67,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("changeColor", (newColor) => {
-        console.log("GET changeColor : ", newColor);
+        // console.log("GET changeColor : ", newColor);
         io.emit("changeColor", newColor);
     })
 
@@ -77,15 +78,26 @@ io.on("connection", (socket) => {
     });
 
     socket.on("getClients", () => {
-        console.log("event getClients", countUser);
+        // console.log("event getClients", countUser);
         io.emit("getClients", countUser);
     });
 })
 
+// TODO: apiファイルとか分割　MC
 app.get("/song-list", (req, res) => {
     console.log("GET SONG LIST");
+    const querry = `SELECT * FROM panels p
+                        INNER JOIN songs s 
+                        ON p.song_id = s.song_id
+                        INNER JOIN colors c
+                        ON p.color_id = c.color_id
+                        INNER JOIN types t
+                        ON c.type_id = t.type_id
+                    ORDER BY p.sort_id
+    `;
+
     db.serialize(() => {
-        db.all("SELECT * FROM songs", (err, rows) => {
+        db.all(querry, (err, rows) => {
             if (!err) {
                 const data = {
                     content: rows
