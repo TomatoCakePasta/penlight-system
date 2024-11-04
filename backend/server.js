@@ -86,7 +86,18 @@ io.on("connection", (socket) => {
 // TODO: apiファイルとか分割　MC
 app.get("/song-list", (req, res) => {
     console.log("GET SONG LIST");
-    const querry = `SELECT * FROM panels p
+    const querry = `SELECT 
+                        p.sort_id,
+                        s.title,
+                        s.artist,
+                        c.color,
+                        c.message,
+                        c.sub_message,
+                        c.speed,
+                        c.angle,
+                        c.label,
+                        t.name
+                    FROM panels p
                         INNER JOIN songs s 
                         ON p.song_id = s.song_id
                         INNER JOIN colors c

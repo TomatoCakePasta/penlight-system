@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from "vue"
+import { nextTick, ref, onMounted } from "vue"
 import axios from "axios";
 
 const props = defineProps({
@@ -70,10 +70,16 @@ const colorPanel = [
   }
 ]
 
+const colorPanelTest = ref();
+
 // 洗濯中のパネルを判別
 const selectedPanelId = ref(0);
 
 const socket = props.socket;
+
+onMounted(() => {
+  getAllPanels();
+})
 
 const onChangeLight = (idx) => {
   // 新しい色をオーディエンスに送信
@@ -84,8 +90,11 @@ const onChangeLight = (idx) => {
 }
 
 const setPanelColor = (colorObj) => {
-  const type = colorObj.type;
+  const type = colorObj.name;
   let ret = "";
+
+  console.log("setPanelColor");
+  console.log(colorObj);
 
   switch(type) {
     case "normal":
@@ -153,12 +162,28 @@ socket.on("getClients", (count) => {
 const getAllPanels = () => {
   axios.get("/song-list")
   .then((res) => {
-    alert(res.data.panels.content[0].artist);
-    console.log(res.data.panels.content[0]);
+    // alert(res.data.panels.content[0].artist);
+    // console.log(res.data.panels.content[0]);
+    colorPanelTest.value = res.data.panels.content;
+    changeTextToArray();
+    console.log(colorPanelTest.value);
   })
   .catch((err) => {
     alert("ERROR");
   });
+}
+
+// カンマ区切りのデータを配列に変換
+const changeTextToArray = () => {
+  console.log("ChangeTextToArray");
+  for (let i = 0; i < colorPanelTest.value.length; i++) {
+    // カンマ区切りを配列に変換
+    const arr = colorPanelTest.value[i].color.split(",");
+
+    // 代入
+    console.log(arr);
+    colorPanelTest.value[i].color = arr;
+  }
 }
 
 </script>
@@ -171,7 +196,7 @@ const getAllPanels = () => {
     <!-- リストでカラーパレット表示 -->
     <v-container>
       <v-row>
-        <v-col v-for="(panel, idx) in colorPanel" :key="idx" cols="6" sm="4">
+        <v-col v-for="(panel, idx) in colorPanelTest" :key="idx" cols="6" sm="4">
           <div 
             class="pa-2 panel"
             :class="{
