@@ -92,11 +92,11 @@ app.get("/panel", (req, res) => {
                         s.artist,
                         c.color,
                         c.message,
-                        c.sub_message,
+                        c.sub_message AS subMessage,
                         c.speed,
                         c.angle,
                         c.label,
-                        t.name
+                        t.name AS type
                     FROM panels p
                         INNER JOIN songs s 
                         ON p.song_id = s.song_id

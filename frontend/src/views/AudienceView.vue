@@ -22,14 +22,16 @@ let plainNewColor;
 
 socket.on("changeColor", (newColor) => {
   isFlash.value = false;
+  console.log("Change color");
+  console.log(newColor);
   removeClass("instant-gradation");
 
   // proxyから通常のオブジェクトに変換
   plainNewColor = toRaw(newColor);
   // 新しい色に更新
   lightColor.value = plainNewColor.color[0];
-  msg.value = plainNewColor.msg;
-  subMsg.value = plainNewColor.subMsg;
+  msg.value = plainNewColor.message;
+  subMsg.value = plainNewColor.subMessage;
 
   // 各種モード
   switch(plainNewColor.type) {

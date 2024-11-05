@@ -95,7 +95,7 @@ onMounted(() => {
 
 const onChangeLight = (idx, panel) => {
   // 新しい色をオーディエンスに送信
-  socket.emit("changeColor", colorPanel[idx])
+  socket.emit("changeColor", colorPanel.value[idx])
 
   // 新しく選択したパネルを囲む
   selectedPanelId.value = idx
@@ -113,7 +113,7 @@ const setSelectedPanel = (panel) => {
 }
 
 const setPanelColor = (colorObj) => {
-  const type = colorObj.name;
+  const type = colorObj.type;
   let ret = "";
 
   // console.log("setPanelColor");
@@ -334,7 +334,7 @@ const saveColorPanel = () => {
           </div> -->
           <v-select
             label="Type"
-            v-model="editPanel.name"
+            v-model="editPanel.type"
             :items="typeList"
             class="mt-5 ml-3 mr-3"
           >
