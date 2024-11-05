@@ -84,9 +84,9 @@ io.on("connection", (socket) => {
 })
 
 // TODO: apiファイルとか分割　MC
-app.get("/song-list", (req, res) => {
-    console.log("GET SONG LIST");
-    const querry = `SELECT 
+app.get("/panel", (req, res) => {
+    console.log("GET PANEL DATA");
+    const query = `SELECT 
                         p.sort_id,
                         s.title,
                         s.artist,
@@ -108,13 +108,66 @@ app.get("/song-list", (req, res) => {
     `;
 
     db.serialize(() => {
-        db.all(querry, (err, rows) => {
+        db.all(query, (err, rows) => {
             if (!err) {
                 const data = {
                     content: rows
                 }
-                console.log("GET SONG LIST", data);
+                // console.log("GET PANEL DATA", data);
                 res.send({panels: data});
+            }
+            else {
+                console.error("Database query error:", err);
+                res.status(500);
+            }
+        })
+    })
+});
+
+app.get("/song-list", (req, res) => {
+    console.log("GET SONG LIST");
+    const query = `SELECT 
+                        title,
+                        artist,
+                        sort_id
+                    FROM songs
+                    ORDER BY sort_id
+    `;
+
+    db.serialize(() => {
+        db.all(query, (err, rows) => {
+            if (!err) {
+                const data = {
+                    content: rows
+                }
+                // console.log("GET SONG LIST", data);
+                res.send({songs: data});
+            }
+            else {
+                console.error("Database query error:", err);
+                res.status(500);
+            }
+        })
+    })
+});
+
+app.get("/type", (req, res) => {
+    console.log("GET TYPE DATA");
+
+    const query = `SELECT 
+                name
+            FROM types
+            ORDER BY type_id
+    `;
+
+    db.serialize(() => {
+        db.all(query, (err, rows) => {
+            if (!err) {
+                const data = {
+                    content: rows
+                }
+                // console.log("GET TYPE DATA", data);
+                res.send({types: data});
             }
             else {
                 console.error("Database query error:", err);

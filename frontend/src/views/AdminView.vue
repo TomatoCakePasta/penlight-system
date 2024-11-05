@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref, onMounted } from "vue"
+import { nextTick, ref, onMounted, toRaw } from "vue"
 import axios from "axios";
 
 const props = defineProps({
@@ -21,7 +21,7 @@ axios.defaults.baseURL = props.url;
   flash: 選択色が指定速度で点滅
   gradation: 選択色が指定速度でグラデーション
 */
-const colorPanel = [
+const colorPanelTest = [
   {
     // 初期画面
     "color": ["black"],
@@ -70,31 +70,54 @@ const colorPanel = [
   }
 ]
 
-const colorPanelTest = ref();
+const colorPanel = ref();
+const songList = ref();
+const typeList = ref();
+
+const editPanel = ref();
+const editSubPanel = ref();
+
+const c = ref();
 
 // 洗濯中のパネルを判別
 const selectedPanelId = ref(0);
 
 const socket = props.socket;
 
+const drawer = ref(false);
+const isShowSongList = ref(true);
+
 onMounted(() => {
   getAllPanels();
+  getALlSongs();
+  getAllTypes();
 })
 
-const onChangeLight = (idx) => {
+const onChangeLight = (idx, panel) => {
   // 新しい色をオーディエンスに送信
   socket.emit("changeColor", colorPanel[idx])
 
   // 新しく選択したパネルを囲む
   selectedPanelId.value = idx
+
+  setSelectedPanel(panel);
+}
+
+// 現在選択中のパネル情報を取得
+const setSelectedPanel = (panel) => {
+  if (panel) {
+    editPanel.value = panel;
+  }
+  // もしgradationの場合
+  // 補助パレットを取得
 }
 
 const setPanelColor = (colorObj) => {
   const type = colorObj.name;
   let ret = "";
 
-  console.log("setPanelColor");
-  console.log(colorObj);
+  // console.log("setPanelColor");
+  // console.log(colorObj);
 
   switch(type) {
     case "normal":
@@ -160,13 +183,40 @@ socket.on("getClients", (count) => {
 
 // dbから色を取得
 const getAllPanels = () => {
-  axios.get("/song-list")
+  axios.get("/panel")
   .then((res) => {
     // alert(res.data.panels.content[0].artist);
     // console.log(res.data.panels.content[0]);
-    colorPanelTest.value = res.data.panels.content;
+    colorPanel.value = res.data.panels.content;
+
+    if (editPanel) {
+      editPanel.value = colorPanel.value[0];
+    }
+
     changeTextToArray();
-    console.log(colorPanelTest.value);
+    // console.log(colorPanel.value);
+  })
+  .catch((err) => {
+    alert("ERROR");
+  });
+}
+
+const getALlSongs = () => {
+  axios.get("/song-list")
+  .then((res) => {
+    songList.value = res.data.songs.content;
+  })
+  .catch((err) => {
+    alert("ERROR");
+  });
+}
+
+const getAllTypes = () => {
+  axios.get("/type")
+  .then((res) => {
+    typeList.value = res.data.types.content;
+    typeList.value = typeList.value.map(item => item.name);
+    console.log(typeList);
   })
   .catch((err) => {
     alert("ERROR");
@@ -175,65 +225,218 @@ const getAllPanels = () => {
 
 // カンマ区切りのデータを配列に変換
 const changeTextToArray = () => {
-  console.log("ChangeTextToArray");
-  for (let i = 0; i < colorPanelTest.value.length; i++) {
+  // console.log("ChangeTextToArray");
+  for (let i = 0; i < colorPanel.value.length; i++) {
     // カンマ区切りを配列に変換
-    const arr = colorPanelTest.value[i].color.split(",");
+    const arr = colorPanel.value[i].color.split(",");
 
     // 代入
-    console.log(arr);
-    colorPanelTest.value[i].color = arr;
+    // console.log(arr);
+    colorPanel.value[i].color = arr;
   }
+}
+
+const saveColorPanel = () => {
+  axios.post("/save-panel", (req, res) => {
+    // 再度DBを読み込み
+    getAllPanels();
+  })
+  .then((err) => {
+    alert("ERROR")
+  });
 }
 
 </script>
 
 <template>
-  <div class="home">
-    <div class="title pt-5">
-      <h1>ライブ名</h1>
-    </div>
-    <!-- リストでカラーパレット表示 -->
-    <v-container>
-      <v-row>
-        <v-col v-for="(panel, idx) in colorPanelTest" :key="idx" cols="6" sm="4">
-          <div 
-            class="pa-2 panel"
-            :class="{
-              'selected': selectedPanelId === idx
-            }"
+  <v-card>
+    <v-layout>
+      <v-app-bar
+        color="grey-darken-4"
+        prominent
+      >
+        <v-app-bar-nav-icon variant="text" @click.stop="drawer=!drawer">
+          +
+        </v-app-bar-nav-icon>
+  
+        <v-toolbar-title>DJ LIVE {{ (!isShowSongList && drawer) ? "- Edit Mode" : "" }}</v-toolbar-title>
+  
+        <v-spacer></v-spacer>
+      </v-app-bar>
+  
+      <!-- permanentで展開時にmainコンテンツ -->
+      <v-navigation-drawer
+        v-model="drawer"
+        permanent=""
+        color="grey-darken-4"
+      >
+        <v-list>
+          <v-list-item
+            @click="isShowSongList = !isShowSongList"
+            link
           >
-            <v-card
-              @click="onChangeLight(idx)"
-              :style="{ background: setPanelColor(panel) }"
+            <v-list-item-content class="text-center">
+              <p :class="isShowSongList ? '' : 'sub-info'">Set List</p>
+              <p :class="isShowSongList ? 'sub-info' : ''">Color Picker</p>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+
+        <!-- セットリスト -->
+        <div v-if="isShowSongList">
+          <v-list>
+            <v-list-item
+              v-for="(song, index) in songList"
+              :key="index"
+              link
             >
-             <p 
-              class="label pa-5 py-10"
-              :style="(panel.type === 'home' || panel.color[0] === 'black') ? { background: 'gray', color: 'white' } : {}"
-              >
-              {{ panel.label }} &nbsp;
-             </p>
-            </v-card>
+              <v-list-item-content class="">
+                <div class="ml-10">
+                  <v-list-item-title class="pt-3 flex">
+                    <p>
+                      {{ index + 1 }}.&nbsp;
+                    </p>
+                    <p>
+                      {{ song.title }}
+                    </p>
+                  </v-list-item-title>
+                  <p class="sub-info">
+                    {{ song.artist }}
+                  </p>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+        </div>
+
+        <!-- TODO:パネルで選択中の情報をobjで保持 -->
+        <div v-else>
+          先頭の1色を指す
+          <div class="d-flex">
+            <v-color-picker
+              v-model="editPanel.color[0]"
+              hide-inputs
+              show-swatches
+              width="230"
+              class="mx-auto"
+            ></v-color-picker>
           </div>
-        </v-col>
-        <v-btn 
-          @click="getClients"
-          class="ml-5"
-        >
-        <p class="">
-          Audience : {{ countClients }}
-        </p>
-        </v-btn>
-        <v-btn @click="getAllPanels">GET</v-btn>
-      </v-row>
-    </v-container>
-  </div>
+
+          <!-- <div 
+            v-for="(item, index) in typeList"
+            :key="index"
+            class="ml-5 flex"
+          >
+            <div class="mt-1">
+              <input type="radio" name="typeSelect"/>
+              <label :for="item.name" class="ml-1">{{ item.name }}</label>
+            </div>
+          </div> -->
+          <v-select
+            label="Type"
+            v-model="editPanel.name"
+            :items="typeList"
+            class="mt-5 ml-3 mr-3"
+          >
+          </v-select>
+          todo形式で他の色を表示<br>
+
+          <v-text-field
+            v-model="editPanel.message"
+            label="Message"
+            class="ml-3 mr-3"
+          >
+          </v-text-field>
+
+          <v-text-field
+            v-model="editPanel.subMessage"
+            label="Sub Message"
+            class="ml-3 mr-3"
+          >
+          </v-text-field>
+
+          <v-text-field
+            v-model="editPanel.label"
+            label="Label"
+            class="ml-3 mr-3"
+          >
+          </v-text-field>
+
+          typeによってspeed, degなど各種フォーム<br>
+          <div class="d-flex">
+            <v-btn
+              class="ml-auto mr-3"
+              variant="outlined"
+            >
+              SAVE
+            </v-btn>
+          </div>
+        </div>
+      </v-navigation-drawer>
+      <v-main>
+        <div class="home">
+          <div class="title pt-5">
+            <!-- <h1>ライブ名</h1> -->
+          </div>
+          <!-- リストでカラーパレット表示 -->
+          <v-container>
+            <v-row>
+              <v-col 
+                v-for="(panel, idx) in colorPanel" 
+                :key="idx" 
+                cols="6" 
+                sm="4"
+              >
+                <div 
+                  class="pa-2 panel"
+                  :class="{
+                    'selected': selectedPanelId === idx
+                  }"
+                >
+                  <v-card
+                    @click="onChangeLight(idx, panel)"
+                    :style="{ background: setPanelColor(panel) }"
+                    height="100"
+                  >
+                  <p 
+                    class="label pa-5 py-10"
+                    :style="(panel.type === 'home' || panel.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
+                    >
+                    {{ panel.label }} &nbsp;
+                  </p>
+                  </v-card>
+                </div>
+              </v-col>
+              <v-btn 
+                @click="getClients"
+                class="ml-5"
+              >
+              <p class="">
+                Audience : {{ countClients }}
+              </p>
+              </v-btn>
+              <v-btn @click="getAllPanels">GET</v-btn>
+            </v-row>
+          </v-container>
+        </div>
+      </v-main>
+    </v-layout>
+  </v-card>
 </template>
 
 <style scoped>
 .home {
   height: 100vh;
   background-color: black;
+}
+
+.flex {
+  display: flex;
+}
+
+.sub-info {
+  color: rgb(158, 158, 158);
+  font-size: 15px;
 }
 
 .panel {
