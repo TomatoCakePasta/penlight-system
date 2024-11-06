@@ -38,6 +38,7 @@ const msg = "test message"
 </template>
 <style scoped>
 .dark {
-  background-color: black;
+  /* background-color: black; */
+  background-color: rgb(23, 23, 23);
 }
 </style>

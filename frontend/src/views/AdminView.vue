@@ -84,6 +84,7 @@ const selectedPanelId = ref(0);
 const socket = props.socket;
 
 const drawer = ref(false);
+const snackBar = ref(false);
 const isShowSongList = ref(true);
 
 onMounted(() => {
@@ -239,7 +240,11 @@ const changeTextToArray = () => {
 const saveColorPanel = () => {
   axios.post("/save-panel", (req, res) => {
     // 再度DBを読み込み
-    getAllPanels();
+    // getAllPanels();
+
+    // スナックバー
+    snackBar.value = true;
+
   })
   .then((err) => {
     alert("ERROR")
@@ -249,7 +254,10 @@ const saveColorPanel = () => {
 </script>
 
 <template>
-  <v-card>
+  <!-- サイドバー開閉時に下地が映るため黒を設定 -->
+  <v-card
+    class="base-back"
+  >
     <v-layout>
       <v-app-bar
         color="grey-darken-4"
@@ -397,6 +405,7 @@ const saveColorPanel = () => {
                   :hideInput="false"
                   :inset="false"
                   variant="filled"
+                  v-model="editPanel.speed"
                 >
                 </v-number-input>
               </div>
@@ -413,6 +422,7 @@ const saveColorPanel = () => {
                   :hideInput="false"
                   :inset="false"
                   variant="filled"
+                  v-model="editPanel.angle"
                 >
                 </v-number-input>
               </div>
@@ -420,12 +430,38 @@ const saveColorPanel = () => {
           </v-row>
 
           <div class="d-flex">
-            <v-btn
+            <!-- <v-btn
               class="ml-auto mr-3 mb-3"
               variant="outlined"
+              @click="saveColorPanel"
             >
               SAVE
-            </v-btn>
+            </v-btn> -->
+
+            <v-snackbar
+              :timeout="1500"
+              color="teal-accent-4"
+              elevation="24"
+              location="bottom"
+              class="mb-5 snackbar-back"
+              variant="outlined"
+              min-width="300"
+            >
+              <template v-slot:activator="{ props }">
+                <v-btn 
+                  class="ml-auto mr-3 mb-5" 
+                  variant="outlined"
+                  v-bind="props"
+                  @click="saveColorPanel"
+                >
+                  SAVE
+                </v-btn>
+              </template>
+  
+              <p class="text-center">
+                Saved Data.
+              </p>
+            </v-snackbar>
           </div>
         </div>
       </v-navigation-drawer>
@@ -475,6 +511,8 @@ const saveColorPanel = () => {
             </v-row>
           </v-container>
         </div>
+        <!-- フッター -->
+        <p class="sub-info text-center">&copy; 2024 ShibaLab</p>
       </v-main>
     </v-layout>
   </v-card>
@@ -484,6 +522,16 @@ const saveColorPanel = () => {
 .home {
   height: 100vh;
   background-color: rgb(23, 23, 23);
+}
+
+.base-back {
+  background-color: rgb(23, 23, 23);
+}
+
+.snackbar-back {
+  /* background-color: rgb(0, 0, 0); */
+  /* outline: 1rem solid; */
+  /* border: 2px solid teal; */
 }
 
 .flex {

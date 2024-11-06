@@ -86,7 +86,8 @@ io.on("connection", (socket) => {
 // TODO: apiファイルとか分割　MC
 app.get("/panel", (req, res) => {
     console.log("GET PANEL DATA");
-    const query = `SELECT 
+    const query = `
+                    SELECT 
                         p.sort_id,
                         s.title,
                         s.artist,
@@ -105,7 +106,7 @@ app.get("/panel", (req, res) => {
                         INNER JOIN types t
                         ON c.type_id = t.type_id
                     ORDER BY p.sort_id
-    `;
+                `;
 
     db.serialize(() => {
         db.all(query, (err, rows) => {
@@ -124,15 +125,65 @@ app.get("/panel", (req, res) => {
     })
 });
 
+// パネル更新
+app.put("/panel", (req, res) => {
+    // idを取得
+    const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = req.body;
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        // 並び順の更新
+        const query1 = `
+                        UPDATE panels
+                        SET sort_id = ?
+                        WHERE panel_id = ?
+                    `;
+
+        db.run(query1, [ sort_id, panel_id ]);
+
+        // 色情報の更新
+        const query2 = `
+                        UPDATE colors
+                        SET 
+                            type_id = ?,
+                            color = ?,
+                            message = ?,
+                            sub_message = ?,
+                            speed = ?,
+                            angle = ?,
+                            label = ?
+                        WHERE color_id = (
+                            SELECT color_id FROM panels WHERE panel_id = ?
+                        )
+                    `;
+
+        db.run(query2, [ type_id, color, message, sub_message, speed, angle, label, panel_id ]);
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                console.error("ERROR: ", err);
+                res.status(500).send("SERVER ERROR");
+            }
+            else {
+                res.status(200).send("UPDATED DATA");
+            }
+        });
+    });
+
+
+});
+
 app.get("/song-list", (req, res) => {
     console.log("GET SONG LIST");
-    const query = `SELECT 
+    const query = `
+                    SELECT 
                         title,
                         artist,
                         sort_id
                     FROM songs
                     ORDER BY sort_id
-    `;
+                `;
 
     db.serialize(() => {
         db.all(query, (err, rows) => {
@@ -154,11 +205,11 @@ app.get("/song-list", (req, res) => {
 app.get("/type", (req, res) => {
     console.log("GET TYPE DATA");
 
-    const query = `SELECT 
-                name
-            FROM types
-            ORDER BY type_id
-    `;
+    const query = `
+                    SELECT name
+                    FROM types
+                    ORDER BY type_id
+                `;
 
     db.serialize(() => {
         db.all(query, (err, rows) => {
