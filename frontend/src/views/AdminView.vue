@@ -75,7 +75,6 @@ const songList = ref();
 const typeList = ref();
 
 const editPanel = ref();
-const editSubPanel = ref();
 
 const c = ref();
 
@@ -108,6 +107,7 @@ const setSelectedPanel = (panel) => {
   if (panel) {
     editPanel.value = panel;
   }
+
   // もしgradationの場合
   // 補助パレットを取得
 }
@@ -256,7 +256,7 @@ const saveColorPanel = () => {
         prominent
       >
         <v-app-bar-nav-icon variant="text" @click.stop="drawer=!drawer">
-          +
+          
         </v-app-bar-nav-icon>
   
         <v-toolbar-title>DJ LIVE {{ (!isShowSongList && drawer) ? "- Edit Mode" : "" }}</v-toolbar-title>
@@ -311,7 +311,6 @@ const saveColorPanel = () => {
 
         <!-- TODO:パネルで選択中の情報をobjで保持 -->
         <div v-else>
-          先頭の1色を指す
           <div class="d-flex">
             <v-color-picker
               v-model="editPanel.color[0]"
@@ -322,24 +321,44 @@ const saveColorPanel = () => {
             ></v-color-picker>
           </div>
 
-          <!-- <div 
-            v-for="(item, index) in typeList"
-            :key="index"
-            class="ml-5 flex"
-          >
-            <div class="mt-1">
-              <input type="radio" name="typeSelect"/>
-              <label :for="item.name" class="ml-1">{{ item.name }}</label>
-            </div>
-          </div> -->
-          <v-select
+          <!-- <v-select
             label="Type"
             v-model="editPanel.type"
             :items="typeList"
             class="mt-5 ml-3 mr-3"
           >
-          </v-select>
-          todo形式で他の色を表示<br>
+          </v-select> -->
+
+          <v-container fluid>
+            <v-radio-group
+              v-model="editPanel.type"
+              class="ml-3 mr-3"
+              inline
+            >
+              <v-radio
+                v-for="(item, index) in typeList"
+                :key="index"
+                :label="item"
+                :value="item"
+                class="fixed-width-radio"
+              >
+              </v-radio>
+            </v-radio-group>
+          </v-container>
+
+          <!-- グラデーション -->
+          <v-col col="1" v-for="(item, index) in editPanel.color" :key="index">
+            <v-card :style="{background: item}" link>&nbsp;</v-card>
+          </v-col>
+          <v-col col="1" v-if="(editPanel.type === 'gradation')">
+            <v-card 
+              link 
+              class="text-center" 
+              variant="outlined"
+            >
+              Add Color
+            </v-card>
+          </v-col>
 
           <v-text-field
             v-model="editPanel.message"
@@ -362,10 +381,47 @@ const saveColorPanel = () => {
           >
           </v-text-field>
 
-          typeによってspeed, degなど各種フォーム<br>
+          <v-row>
+            <v-col                 
+              class="ml-3 mr-3"
+            >
+              <div
+                v-if="(editPanel.type === 'flash') || (editPanel.type === 'gradation')"
+              >
+                <p class="sub-info">Speed</p>
+                <v-number-input
+                  :reverse="false"
+                  controlVariant="stacked"
+                  :min="0"
+                  :max="1000"
+                  :hideInput="false"
+                  :inset="false"
+                  variant="filled"
+                >
+                </v-number-input>
+              </div>
+
+              <div
+                v-if="editPanel.type === 'gradation'"
+              >
+                <p class="sub-info">Angle</p>
+                <v-number-input
+                  :reverse="false"
+                  controlVariant="stacked"
+                  :min="0"
+                  :max="360"
+                  :hideInput="false"
+                  :inset="false"
+                  variant="filled"
+                >
+                </v-number-input>
+              </div>
+            </v-col>
+          </v-row>
+
           <div class="d-flex">
             <v-btn
-              class="ml-auto mr-3"
+              class="ml-auto mr-3 mb-3"
               variant="outlined"
             >
               SAVE
@@ -427,11 +483,15 @@ const saveColorPanel = () => {
 <style scoped>
 .home {
   height: 100vh;
-  background-color: black;
+  background-color: rgb(23, 23, 23);
 }
 
 .flex {
   display: flex;
+}
+
+.fixed-width-radio {
+  min-width: 80px;
 }
 
 .sub-info {
