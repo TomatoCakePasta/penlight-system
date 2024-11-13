@@ -74,12 +74,17 @@ const colorPanel = ref();
 const songList = ref();
 const typeList = ref();
 
+const panelType = ref([]);
+
 const editPanel = ref();
 
 const c = ref();
 
-// 洗濯中のパネルを判別
+// 選択中のパネルを判別
 const selectedPanelId = ref(0);
+
+// TODO: 選択中の曲のパネルを全て保持する用のオブジェクト用意する?
+// 上記2つから一意にパネル特定できない?[selectedPanelId][selectedSongId]みたいに
 
 const socket = props.socket;
 
@@ -137,6 +142,7 @@ const setPanelColor = (colorObj) => {
       break;
   }
 
+  // panelType.value[idx] = ret;
   return ret;
 }
 
@@ -196,9 +202,13 @@ const getAllPanels = () => {
 
     changeTextToArray();
     // console.log(colorPanel.value);
+
+    // colorPanel.value.map((colorObj, idx) => setPanelColor(colorObj, idx));
+    console.log("panelType");
+    console.log(panelType.value);
   })
   .catch((err) => {
-    alert("ERROR");
+    alert("ERROR GET ALL PANEL", err);
   });
 }
 
@@ -216,8 +226,9 @@ const getAllTypes = () => {
   axios.get("/type")
   .then((res) => {
     typeList.value = res.data.types.content;
-    typeList.value = typeList.value.map(item => item.name);
-    console.log(typeList);
+    // homeタイプは除く
+    typeList.value = typeList.value.slice(1).map(item => item.name);
+    // console.log(typeList);
   })
   .catch((err) => {
     alert("ERROR");
@@ -238,17 +249,42 @@ const changeTextToArray = () => {
 }
 
 const saveColorPanel = () => {
-  axios.post("/save-panel", (req, res) => {
-    // 再度DBを読み込み
-    // getAllPanels();
+  /*
+  const newData = editPanel.value;
+  console.log(newData);
 
-    // スナックバー
-    snackBar.value = true;
+  const data = {
+    panel_id: newData.panel_id,
+    sort_id: newData.sort_id,
+    color: newData.color.join(","),
+    message: newData.message,
+    sub_message: newData.sub_message,
+    speed: newData.speed,
+    angle: newData.angle,
+    label: newData.label,
+    type_id: newData.type_id    
+  }
+    */
 
+  let datas = colorPanel.value;
+
+  datas.forEach((data) => {
+    console.log("before"+data.color);
+    data.color = data.color.join(",");
+    console.log("after"+data.color);
   })
-  .then((err) => {
-    alert("ERROR")
-  });
+
+  axios.post("/save-panel", datas)
+    .then((res) => {
+      // 再度DBを読み込み
+      getAllPanels();
+
+      // スナックバー
+      snackBar.value = true;
+    })
+    .catch((err) => {
+
+    });
 }
 
 </script>
@@ -321,7 +357,7 @@ const saveColorPanel = () => {
         <div v-else>
           <div class="d-flex">
             <v-color-picker
-              v-model="editPanel.color[0]"
+              v-model="colorPanel[selectedPanelId].color[0]"
               hide-inputs
               show-swatches
               width="230"
@@ -339,7 +375,7 @@ const saveColorPanel = () => {
 
           <v-container fluid>
             <v-radio-group
-              v-model="editPanel.type"
+              v-model="colorPanel[selectedPanelId].type_id"
               class="ml-3 mr-3"
               inline
             >
@@ -347,7 +383,7 @@ const saveColorPanel = () => {
                 v-for="(item, index) in typeList"
                 :key="index"
                 :label="item"
-                :value="item"
+                :value="index + 2"
                 class="fixed-width-radio"
               >
               </v-radio>
@@ -355,10 +391,10 @@ const saveColorPanel = () => {
           </v-container>
 
           <!-- グラデーション -->
-          <v-col col="1" v-for="(item, index) in editPanel.color" :key="index">
+          <v-col col="1" v-for="(item, index) in colorPanel[selectedPanelId].color" :key="index">
             <v-card :style="{background: item}" link>&nbsp;</v-card>
           </v-col>
-          <v-col col="1" v-if="(editPanel.type === 'gradation')">
+          <v-col col="1" v-if="(typeList[colorPanel[selectedPanelId].type_id - 2] === 'gradation')">
             <v-card 
               link 
               class="text-center" 
@@ -369,21 +405,21 @@ const saveColorPanel = () => {
           </v-col>
 
           <v-text-field
-            v-model="editPanel.message"
+            v-model="colorPanel[selectedPanelId].message"
             label="Message"
             class="ml-3 mr-3"
           >
           </v-text-field>
 
           <v-text-field
-            v-model="editPanel.subMessage"
+            v-model="colorPanel[selectedPanelId].sub_essage"
             label="Sub Message"
             class="ml-3 mr-3"
           >
           </v-text-field>
 
           <v-text-field
-            v-model="editPanel.label"
+            v-model="colorPanel[selectedPanelId].label"
             label="Label"
             class="ml-3 mr-3"
           >
@@ -394,7 +430,7 @@ const saveColorPanel = () => {
               class="ml-3 mr-3"
             >
               <div
-                v-if="(editPanel.type === 'flash') || (editPanel.type === 'gradation')"
+                v-if="(colorPanel[selectedPanelId].type === 'flash') || (colorPanel[selectedPanelId].type === 'gradation')"
               >
                 <p class="sub-info">Speed</p>
                 <v-number-input
@@ -405,13 +441,13 @@ const saveColorPanel = () => {
                   :hideInput="false"
                   :inset="false"
                   variant="filled"
-                  v-model="editPanel.speed"
+                  v-model="colorPanel[selectedPanelId].speed"
                 >
                 </v-number-input>
               </div>
 
               <div
-                v-if="editPanel.type === 'gradation'"
+                v-if="colorPanel[selectedPanelId].type === 'gradation'"
               >
                 <p class="sub-info">Angle</p>
                 <v-number-input
@@ -422,7 +458,7 @@ const saveColorPanel = () => {
                   :hideInput="false"
                   :inset="false"
                   variant="filled"
-                  v-model="editPanel.angle"
+                  v-model="colorPanel[selectedPanelId].angle"
                 >
                 </v-number-input>
               </div>
@@ -465,7 +501,11 @@ const saveColorPanel = () => {
           </div>
         </div>
       </v-navigation-drawer>
+
       <v-main>
+        <p class="sub-info">
+          {{ selectedPanelId }}
+        </p>
         <div class="home">
           <div class="title pt-5">
             <!-- <h1>ライブ名</h1> -->
@@ -485,16 +525,21 @@ const saveColorPanel = () => {
                     'selected': selectedPanelId === idx
                   }"
                 >
-                  <v-card
+                  <!-- <v-card
                     @click="onChangeLight(idx, panel)"
                     :style="{ background: setPanelColor(panel) }"
+                    height="100"
+                  > -->
+                  <v-card
+                    @click="onChangeLight(idx, panel)"
+                    :style="{background: setPanelColor(panel)}"
                     height="100"
                   >
                   <p 
                     class="label pa-5 py-10"
                     :style="(panel.type === 'home' || panel.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
                     >
-                    {{ panel.label }} &nbsp;
+                    {{ panel.label }} {{ panel.color[0] }}&nbsp;
                   </p>
                   </v-card>
                 </div>
@@ -509,6 +554,9 @@ const saveColorPanel = () => {
               </v-btn>
               <v-btn @click="getAllPanels">GET</v-btn>
             </v-row>
+            <p class="sub-info">
+              {{ colorPanel }}
+            </p>
           </v-container>
         </div>
         <!-- フッター -->

@@ -41,6 +41,9 @@ app.use(cors({
     // credentials: false,
 }));
 
+// JSON形式のリクエストボディをパース
+app.use(express.json());
+
 const io = new Server(httpServer, {
     cors: {
         origin: "*", // 許可したいオリジンを指定
@@ -84,19 +87,22 @@ io.on("connection", (socket) => {
 })
 
 // TODO: apiファイルとか分割　MC
+// TODO: 選択した曲のパネルのみ取得
 app.get("/panel", (req, res) => {
     console.log("GET PANEL DATA");
     const query = `
                     SELECT 
+                        p.panel_id,
                         p.sort_id,
                         s.title,
                         s.artist,
                         c.color,
                         c.message,
-                        c.sub_message AS subMessage,
+                        c.sub_message,
                         c.speed,
                         c.angle,
                         c.label,
+                        c.type_id,
                         t.name AS type
                     FROM panels p
                         INNER JOIN songs s 
@@ -126,10 +132,14 @@ app.get("/panel", (req, res) => {
 });
 
 // パネル更新
-app.put("/panel", (req, res) => {
+app.post("/save-panel", (req, res) => {
     // idを取得
-    const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = req.body;
+    // const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = req.body;
 
+    // console.log("put save-panel", req.body);
+    // console.log(sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label);
+
+    /*
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
 
@@ -170,8 +180,60 @@ app.put("/panel", (req, res) => {
             }
         });
     });
+    */
 
+    
+    const panelsData = req.body;
 
+    console.log(panelsData);
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        
+        panelsData.forEach((panel) => {
+            const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = panel;
+
+            console.log(sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label );
+
+            // 並び順の更新
+            const query1 = `
+                            UPDATE panels
+                            SET sort_id = ?
+                            WHERE panel_id = ?
+                        `;
+
+            db.run(query1, [ sort_id, panel_id ]);
+
+            // 色情報の更新
+            const query2 = `
+                            UPDATE colors
+                            SET 
+                                type_id = ?,
+                                color = ?,
+                                message = ?,
+                                sub_message = ?,
+                                speed = ?,
+                                angle = ?,
+                                label = ?
+                            WHERE color_id = (
+                                SELECT color_id FROM panels WHERE panel_id = ?
+                            )
+                        `;
+
+            db.run(query2, [ type_id, color, message, sub_message, speed, angle, label, panel_id ]);
+        });
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                console.error("ERROR: ", err);
+                res.status(500).send("SERVER ERROR");
+            }
+            else {
+                res.status(200).send("UPDATED DATA");
+            }
+        });
+    });
+    
 });
 
 app.get("/song-list", (req, res) => {
