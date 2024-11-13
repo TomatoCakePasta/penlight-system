@@ -136,6 +136,7 @@ const setPanelColor = (colorObj) => {
 
     case "gradation":
       ret = getGradationPanel(colorObj.color);
+      console.log(ret);
       break;
 
     default:
@@ -429,8 +430,9 @@ const saveColorPanel = () => {
             <v-col                 
               class="ml-3 mr-3"
             >
+              <!-- TODO: idではなくtype名を指定したい gradation 現状はselectで1つしかv-modelでbindできないため -->
               <div
-                v-if="(colorPanel[selectedPanelId].type === 'flash') || (colorPanel[selectedPanelId].type === 'gradation')"
+                v-if="(colorPanel[selectedPanelId].type_id === 3) || (colorPanel[selectedPanelId].type_id === 4)"
               >
                 <p class="sub-info">Speed</p>
                 <v-number-input
@@ -446,8 +448,9 @@ const saveColorPanel = () => {
                 </v-number-input>
               </div>
 
+              <!-- TODO: idではなくtype名を指定したい gradation 現状はselectで1つしかv-modelでbindできないため -->
               <div
-                v-if="colorPanel[selectedPanelId].type === 'gradation'"
+                v-if="colorPanel[selectedPanelId].type_id === 4"
               >
                 <p class="sub-info">Angle</p>
                 <v-number-input
