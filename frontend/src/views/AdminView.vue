@@ -119,7 +119,7 @@ const setSelectedPanel = (panel) => {
 }
 
 const setPanelColor = (colorObj) => {
-  const type = colorObj.type;
+  const type = typeList.value[colorObj.type_id - 2];
   let ret = "";
 
   // console.log("setPanelColor");
@@ -556,6 +556,7 @@ const saveColorPanel = () => {
             </v-row>
             <p class="sub-info">
               {{ colorPanel }}
+              {{ typeList }}
             </p>
           </v-container>
         </div>
