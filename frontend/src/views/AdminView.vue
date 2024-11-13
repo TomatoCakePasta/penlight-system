@@ -83,6 +83,9 @@ const c = ref();
 // 選択中のパネルを判別
 const selectedPanelId = ref(0);
 
+// 洗濯中のパネル内にある複数色の色のうち変更したい色
+const selectedColorInPanelId = ref(0);
+
 // TODO: 選択中の曲のパネルを全て保持する用のオブジェクト用意する?
 // 上記2つから一意にパネル特定できない?[selectedPanelId][selectedSongId]みたいに
 
@@ -148,7 +151,7 @@ const setPanelColor = (colorObj) => {
 }
 
 const getFlashPanel = (color) => {
-  return `repeating-linear-gradient(-45deg, #000000, #000000 5px, ${color} 5px, ${color} 10px)`;
+  return `repeating-linear-gradient(-45deg, #000000, #000000 5px, ${color[0]} 5px, ${color[0]} 10px)`;
 }
 
 const getGradationPanel = (colors) => {
@@ -358,7 +361,7 @@ const saveColorPanel = () => {
         <div v-else>
           <div class="d-flex">
             <v-color-picker
-              v-model="colorPanel[selectedPanelId].color[0]"
+              v-model="colorPanel[selectedPanelId].color[selectedColorInPanelId]"
               hide-inputs
               show-swatches
               width="230"
@@ -393,7 +396,12 @@ const saveColorPanel = () => {
 
           <!-- グラデーション -->
           <v-col col="1" v-for="(item, index) in colorPanel[selectedPanelId].color" :key="index">
-            <v-card :style="{background: item}" link>&nbsp;</v-card>
+            <div class="flex">
+              <v-card class="flex-grow-1" :style="{background: item}" link @click="selectedColorInPanelId = index">
+                &nbsp;
+              </v-card>
+              <v-btn variant="text" :disabled="index === 0" class="ml-2" height="30" width="30" icon="mdi-window-close"></v-btn>
+            </div>
           </v-col>
           <v-col col="1" v-if="(typeList[colorPanel[selectedPanelId].type_id - 2] === 'gradation')">
             <v-card 
