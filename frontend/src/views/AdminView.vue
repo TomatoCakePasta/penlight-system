@@ -81,6 +81,9 @@ const editPanel = ref();
 const c = ref();
 
 // 選択中のパネルを判別
+/**
+ * 洗濯中のパネルを判別
+ */
 const selectedPanelId = ref(0);
 
 // 洗濯中のパネル内にある複数色の色のうち変更したい色
@@ -112,6 +115,11 @@ const onChangeLight = (idx, panel) => {
 }
 
 // 現在選択中のパネル情報を取得
+/**
+ * 
+ * @param panel 
+ * 洗濯中のパネル情報を取得 editPanelに代入
+ */
 const setSelectedPanel = (panel) => {
   if (panel) {
     editPanel.value = panel;
@@ -121,6 +129,11 @@ const setSelectedPanel = (panel) => {
   // 補助パレットを取得
 }
 
+/**
+ * 
+ * @param colorObj 
+ * 引数のtype別にcss文を返却
+ */
 const setPanelColor = (colorObj) => {
   const type = typeList.value[colorObj.type_id - 2];
   let ret = "";
@@ -216,6 +229,7 @@ const getAllPanels = () => {
   });
 }
 
+// セットリストを取得
 const getALlSongs = () => {
   axios.get("/song-list")
   .then((res) => {
@@ -226,6 +240,7 @@ const getALlSongs = () => {
   });
 }
 
+// パネルタイプの種類を取得
 const getAllTypes = () => {
   axios.get("/type")
   .then((res) => {
@@ -252,6 +267,9 @@ const changeTextToArray = () => {
   }
 }
 
+/**
+ * パネルDB更新 colorPanelでパネル情報を送信
+ */
 const saveColorPanel = () => {
   /*
   const newData = editPanel.value;
@@ -291,6 +309,22 @@ const saveColorPanel = () => {
     });
 }
 
+/**
+ * グラデーションカラーパネルを追加
+ */
+const addGradationPanel = () => {
+  const initColor = "#ffffff"
+
+  // color配列を追加
+  colorPanel.value[selectedPanelId.value].color.push(initColor);
+}
+
+/**
+ * グラデーションカラーパネルを削除
+ */
+const delGradationPanel = (idx) => {
+  colorPanel.value[selectedPanelId.value].color.splice(idx, 1);
+}
 </script>
 
 <template>
@@ -395,22 +429,32 @@ const saveColorPanel = () => {
           </v-container>
 
           <!-- グラデーション -->
+          <v-col col="1" v-if="(typeList[colorPanel[selectedPanelId].type_id - 2] === 'gradation')">
+            <!-- TODO: すでにカラーパネルが7枚ならdisabledにしたい -->
+            <v-card 
+              link 
+              class="text-center" 
+              variant="outlined"
+              @click="addGradationPanel"
+            >
+              Add Color
+            </v-card>
+          </v-col>
           <v-col col="1" v-for="(item, index) in colorPanel[selectedPanelId].color" :key="index">
             <div class="flex">
               <v-card class="flex-grow-1" :style="{background: item}" link @click="selectedColorInPanelId = index">
                 &nbsp;
               </v-card>
-              <v-btn variant="text" :disabled="index === 0" class="ml-2" height="30" width="30" icon="mdi-window-close"></v-btn>
+              <v-btn 
+                variant="text" 
+                :disabled="index === 0" 
+                class="ml-2" 
+                height="30" 
+                width="30" 
+                icon="mdi-window-close"
+                @click="delGradationPanel(index)"
+              ></v-btn>
             </div>
-          </v-col>
-          <v-col col="1" v-if="(typeList[colorPanel[selectedPanelId].type_id - 2] === 'gradation')">
-            <v-card 
-              link 
-              class="text-center" 
-              variant="outlined"
-            >
-              Add Color
-            </v-card>
           </v-col>
 
           <v-text-field
