@@ -82,20 +82,35 @@ const c = ref();
 
 // 選択中のパネルを判別
 /**
- * 洗濯中のパネルを判別
+ * 選択中のパネルを判別
  */
 const selectedPanelId = ref(0);
 
-// 洗濯中のパネル内にある複数色の色のうち変更したい色
+/**
+ * 選択中のパネル内にある複数色の色のうち変更したい色 
+ */ 
 const selectedColorInPanelId = ref(0);
+
+/**
+ * 選択中のセットリスト
+ */
+const selectedSongId = ref(0);
 
 // TODO: 選択中の曲のパネルを全て保持する用のオブジェクト用意する?
 // 上記2つから一意にパネル特定できない?[selectedPanelId][selectedSongId]みたいに
 
 const socket = props.socket;
 
+/**
+ * サイドパネル開閉フラグ
+ */
 const drawer = ref(false);
+
+/**
+ * 保存メッセージのスナックバー
+ */
 const snackBar = ref(false);
+
 const isShowSongList = ref(true);
 
 onMounted(() => {
@@ -104,21 +119,37 @@ onMounted(() => {
   getAllTypes();
 })
 
+/**
+ * 
+ * @param idx 
+ * @param panel 
+ * オペレーションモードの時,選択したパネルカラーをクライアントに送信
+ */
 const onChangeLight = (idx, panel) => {
-  // 新しい色をオーディエンスに送信
-  socket.emit("changeColor", colorPanel.value[idx])
+  // TODO: セットリスト表示の時も変更可能の方がいいかも
+  if (!drawer.value) {
+    // 新しい色をオーディエンスに送信
+    socket.emit("changeColor", colorPanel.value[idx])
+  
+    setSelectedPanel(panel);
+  }
 
   // 新しく選択したパネルを囲む
   selectedPanelId.value = idx
+}
 
-  setSelectedPanel(panel);
+const onChangeSong = (idx) => {
+  selectedSongId.value = idx;
+
+  // その曲のパネルを取得
+  getAllPanels();
 }
 
 // 現在選択中のパネル情報を取得
 /**
  * 
  * @param panel 
- * 洗濯中のパネル情報を取得 editPanelに代入
+ * 選択中のパネル情報を取得 editPanelに代入
  */
 const setSelectedPanel = (panel) => {
   if (panel) {
@@ -207,7 +238,7 @@ socket.on("getClients", (count) => {
 
 // dbから色を取得
 const getAllPanels = () => {
-  axios.get("/panel")
+  axios.get(`/panel/${selectedSongId.value + 1}`)
   .then((res) => {
     // alert(res.data.panels.content[0].artist);
     // console.log(res.data.panels.content[0]);
@@ -218,7 +249,7 @@ const getAllPanels = () => {
     }
 
     changeTextToArray();
-    // console.log(colorPanel.value);
+    console.log(colorPanel.value);
 
     // colorPanel.value.map((colorObj, idx) => setPanelColor(colorObj, idx));
     console.log("panelType");
@@ -301,7 +332,7 @@ const saveColorPanel = () => {
       // 再度DBを読み込み
       getAllPanels();
 
-      // スナックバー
+      // 保存メッセージのスナックバー
       snackBar.value = true;
     })
     .catch((err) => {
@@ -325,6 +356,22 @@ const addGradationPanel = () => {
 const delGradationPanel = (idx) => {
   colorPanel.value[selectedPanelId.value].color.splice(idx, 1);
 }
+
+const addPanel = () => {
+  const data = {
+    song_id: selectedSongId.value + 1
+  }
+
+  axios.post("/add-panel", data)
+    .then((res) => {
+      getAllPanels();
+    })
+    .catch((err) => {
+
+    })
+}
+
+const isShowDebug = ref(false);
 </script>
 
 <template>
@@ -371,6 +418,7 @@ const delGradationPanel = (idx) => {
               v-for="(song, index) in songList"
               :key="index"
               link
+              @click="onChangeSong(index)"
             >
               <v-list-item-content class="">
                 <div class="ml-10">
@@ -429,7 +477,7 @@ const delGradationPanel = (idx) => {
           </v-container>
 
           <!-- グラデーション -->
-          <v-col col="1" v-if="(typeList[colorPanel[selectedPanelId].type_id - 2] === 'gradation')">
+          <v-col col="1" v-if="(typeList && typeList[colorPanel[selectedPanelId].type_id - 2] === 'gradation')">
             <!-- TODO: すでにカラーパネルが7枚ならdisabledにしたい -->
             <v-card 
               link 
@@ -441,7 +489,7 @@ const delGradationPanel = (idx) => {
             </v-card>
           </v-col>
           <v-col col="1" v-for="(item, index) in colorPanel[selectedPanelId].color" :key="index">
-            <div class="flex">
+            <div class="flex" v-if="(colorPanel[selectedPanelId].type_id === 4) || (index === 0)">
               <v-card class="flex-grow-1" :style="{background: item}" link @click="selectedColorInPanelId = index">
                 &nbsp;
               </v-card>
@@ -495,8 +543,7 @@ const delGradationPanel = (idx) => {
                   :hideInput="false"
                   :inset="false"
                   variant="filled"
-                  v-model="colorPanel[selectedPanelId].speed"
-                >
+                  v-model="colorPanel[selectedPanelId].speed">
                 </v-number-input>
               </div>
 
@@ -529,6 +576,15 @@ const delGradationPanel = (idx) => {
               SAVE
             </v-btn> -->
 
+            <!-- TODO: 確認ダイアログ出す Are you sure? IDでパネル削除する削除APIを呼ぶ-->
+            <v-btn 
+              color="amber-darken-3" 
+              variant="outlined" 
+              class="ml-3"
+              @click="delPanel"
+            >
+              DELETE
+            </v-btn>
             <v-snackbar
               :timeout="1500"
               color="teal-accent-4"
@@ -536,8 +592,7 @@ const delGradationPanel = (idx) => {
               location="bottom"
               class="mb-5 snackbar-back"
               variant="outlined"
-              min-width="300"
-            >
+              min-width="300">
               <template v-slot:activator="{ props }">
                 <v-btn 
                   class="ml-auto mr-3 mb-5" 
@@ -558,8 +613,9 @@ const delGradationPanel = (idx) => {
       </v-navigation-drawer>
 
       <v-main>
-        <p class="sub-info">
-          {{ selectedPanelId }}
+        <p class="sub-info" v-if="isShowDebug">
+          select {{ selectedPanelId }}
+          song {{ selectedSongId }} 
         </p>
         <div class="home">
           <div class="title pt-5">
@@ -568,6 +624,7 @@ const delGradationPanel = (idx) => {
           <!-- リストでカラーパレット表示 -->
           <v-container>
             <v-row>
+              <!-- TODO: sm=2,3が良きかも -->
               <v-col 
                 v-for="(panel, idx) in colorPanel" 
                 :key="idx" 
@@ -590,26 +647,41 @@ const delGradationPanel = (idx) => {
                     :style="{background: setPanelColor(panel)}"
                     height="100"
                   >
-                  <p 
-                    class="label pa-5 py-10"
-                    :style="(panel.type === 'home' || panel.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
-                    >
-                    {{ panel.label }} {{ panel.color[0] }}&nbsp;
-                  </p>
+                    <p 
+                      class="label pa-5 py-10"
+                      :style="(panel.type === 'home' || panel.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
+                      >
+                      {{ panel.label }}&nbsp;
+                      <!-- {{ panel.color }} -->
+                    </p>
                   </v-card>
                 </div>
               </v-col>
-              <v-btn 
-                @click="getClients"
-                class="ml-5"
-              >
-              <p class="">
-                Audience : {{ countClients }}
-              </p>
-              </v-btn>
-              <v-btn @click="getAllPanels">GET</v-btn>
             </v-row>
-            <p class="sub-info">
+            <v-btn 
+              @click="getClients"
+              class="ml-2"
+              color="white"
+              variant="outlined"
+            >
+            <p class="">
+              Audience : {{ countClients }}
+            </p>
+            </v-btn>
+
+            <v-btn 
+              class="ml-5" 
+              v-if="drawer"
+              color="white"
+              variant="outlined"
+              @click="addPanel"
+            >
+              Add Panel
+            </v-btn>
+
+            <v-btn @click="getAllPanels" v-if="isShowDebug">GET</v-btn>
+
+            <p class="sub-info" v-if="isShowDebug">
               {{ colorPanel }}
               {{ typeList }}
             </p>
@@ -625,6 +697,7 @@ const delGradationPanel = (idx) => {
 <style scoped>
 .home {
   height: 100vh;
+  overflow: auto;
   background-color: rgb(23, 23, 23);
 }
 

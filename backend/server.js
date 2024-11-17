@@ -70,6 +70,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("changeColor", (newColor) => {
+         console.log("Change Color");
         // console.log("GET changeColor : ", newColor);
         io.emit("changeColor", newColor);
     })
@@ -88,7 +89,9 @@ io.on("connection", (socket) => {
 
 // TODO: apiファイルとか分割　MC
 // TODO: 選択した曲のパネルのみ取得
-app.get("/panel", (req, res) => {
+app.get("/panel/:id", (req, res) => {
+    const song_id = req.params.id;
+
     console.log("GET PANEL DATA");
     const query = `
                     SELECT 
@@ -111,11 +114,12 @@ app.get("/panel", (req, res) => {
                         ON p.color_id = c.color_id
                         INNER JOIN types t
                         ON c.type_id = t.type_id
+                    WHERE p.song_id = ?
                     ORDER BY p.sort_id
                 `;
 
     db.serialize(() => {
-        db.all(query, (err, rows) => {
+        db.all(query, [song_id], (err, rows) => {
             if (!err) {
                 const data = {
                     content: rows
@@ -289,6 +293,56 @@ app.get("/type", (req, res) => {
         })
     })
 });
+
+// 新規パネル作成
+app.post("/add-panel", (req, res) => {
+    const { song_id } = req.body;
+
+    console.log("add-panel");
+    const query = `INSERT INTO colors DEFAULT VALUES`;
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+      
+        // 新規colorを作成
+        db.run(query, function (err) {
+            if (err) {
+                return console.error("Failed to initialize new panel: ", err);
+            }
+
+            // 今新規作成したカラーパネルのidを取得
+            const color_id = this.lastID;
+            console.log("color_id:", color_id);
+
+            // 現在の曲中のパネルのソート最大値を取得
+            const query2 = `SELECT COUNT(*) as sort_id FROM panels WHERE song_id = ?`;
+            db.get(query2, [ song_id ], (err, res) => {
+                if (err) {
+                    return console.error("Failed to get sort_id: ", err);
+                }
+                else {
+                    const query3 = `INSERT INTO panels (song_id, color_id, sort_id) VALUES (?, ?, ?)`;
+
+                    console.log("sort_id:", res.sort_id);
+
+                    // パネルを作成
+                    db.run(query3, [ song_id, color_id, res.sort_id + 1]);
+                }
+            });
+        });
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                console.error("ERROR: ", err);
+                res.status(500).send("SERVER ERROR");
+            }
+            else {
+                res.status(200).send("UPDATED DATA");
+            }
+        });
+    })
+
+})
 
 httpServer.listen(PORT, () => {
     console.log("Server is running ", PORT);
