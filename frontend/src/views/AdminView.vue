@@ -533,9 +533,10 @@ const isShowDebug = ref(false);
               <!-- TODO: idではなくtype名を指定したい gradation 現状はselectで1つしかv-modelでbindできないため -->
               <div
                 v-if="(colorPanel[selectedPanelId].type_id === 3) || (colorPanel[selectedPanelId].type_id === 4)"
+                class="mb-5"
               >
-                <p class="sub-info">Speed</p>
-                <v-number-input
+                <p class="sub-info">Speed {{ colorPanel[selectedPanelId].speed }}</p>
+                <!-- <v-number-input
                   :reverse="false"
                   controlVariant="stacked"
                   :min="0"
@@ -544,15 +545,26 @@ const isShowDebug = ref(false);
                   :inset="false"
                   variant="filled"
                   v-model="colorPanel[selectedPanelId].speed">
-                </v-number-input>
+                </v-number-input> -->
+                <v-slider
+                  v-model="colorPanel[selectedPanelId].speed"
+                  max="200"
+                  min="10"
+                  class="align-center"
+                  hide-details
+                  step="10"
+                  thumb-label=""
+                >
+                </v-slider>
               </div>
 
               <!-- TODO: idではなくtype名を指定したい gradation 現状はselectで1つしかv-modelでbindできないため -->
               <div
                 v-if="colorPanel[selectedPanelId].type_id === 4"
+                class="mb-5"
               >
-                <p class="sub-info">Angle</p>
-                <v-number-input
+                <p class="sub-info">Angle  {{ colorPanel[selectedPanelId].angle }}</p>
+                <!-- <v-number-input
                   :reverse="false"
                   controlVariant="stacked"
                   :min="0"
@@ -562,7 +574,17 @@ const isShowDebug = ref(false);
                   variant="filled"
                   v-model="colorPanel[selectedPanelId].angle"
                 >
-                </v-number-input>
+                </v-number-input> -->
+                <v-slider
+                  v-model="colorPanel[selectedPanelId].angle"
+                  max="360"
+                  min="0"
+                  class="align-center"
+                  hide-details
+                  step="10"
+                  thumb-label=""
+                >
+                </v-slider>
               </div>
             </v-col>
           </v-row>
