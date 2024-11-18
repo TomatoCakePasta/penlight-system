@@ -103,25 +103,23 @@ app.get("/panel/:id", (req, res) => {
     console.log("GET PANEL DATA");
     const query = `
                     SELECT 
-                        p.panel_id,
+                        panel_id,
                         p.sort_id,
-                        s.title,
-                        s.artist,
-                        c.color,
-                        c.message,
-                        c.sub_message,
-                        c.speed,
-                        c.angle,
-                        c.label,
-                        c.type_id,
-                        t.name AS type
+                        title,
+                        artist,
+                        color,
+                        message,
+                        sub_message,
+                        speed,
+                        angle,
+                        label,
+                        t.type_id,
+                        name AS type
                     FROM panels p
                         INNER JOIN songs s 
                         ON p.song_id = s.song_id
-                        INNER JOIN colors c
-                        ON p.color_id = c.color_id
                         INNER JOIN types t
-                        ON c.type_id = t.type_id
+                        ON p.type_id = t.type_id
                     WHERE p.song_id = ?
                     ORDER BY p.sort_id
                 `;
@@ -144,57 +142,7 @@ app.get("/panel/:id", (req, res) => {
 });
 
 // パネル更新
-app.post("/save-panel", (req, res) => {
-    // idを取得
-    // const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = req.body;
-
-    // console.log("put save-panel", req.body);
-    // console.log(sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label);
-
-    /*
-    db.serialize(() => {
-        db.run("BEGIN TRANSACTION");
-
-        // 並び順の更新
-        const query1 = `
-                        UPDATE panels
-                        SET sort_id = ?
-                        WHERE panel_id = ?
-                    `;
-
-        db.run(query1, [ sort_id, panel_id ]);
-
-        // 色情報の更新
-        const query2 = `
-                        UPDATE colors
-                        SET 
-                            type_id = ?,
-                            color = ?,
-                            message = ?,
-                            sub_message = ?,
-                            speed = ?,
-                            angle = ?,
-                            label = ?
-                        WHERE color_id = (
-                            SELECT color_id FROM panels WHERE panel_id = ?
-                        )
-                    `;
-
-        db.run(query2, [ type_id, color, message, sub_message, speed, angle, label, panel_id ]);
-
-        db.run("COMMIT", (err) => {
-            if (err) {
-                console.error("ERROR: ", err);
-                res.status(500).send("SERVER ERROR");
-            }
-            else {
-                res.status(200).send("UPDATED DATA");
-            }
-        });
-    });
-    */
-
-    
+app.post("/save-panel", (req, res) => {    
     const panelsData = req.body;
 
     console.log(panelsData);
@@ -218,7 +166,7 @@ app.post("/save-panel", (req, res) => {
 
             // 色情報の更新
             const query2 = `
-                            UPDATE colors
+                            UPDATE panels
                             SET 
                                 type_id = ?,
                                 color = ?,
@@ -227,9 +175,7 @@ app.post("/save-panel", (req, res) => {
                                 speed = ?,
                                 angle = ?,
                                 label = ?
-                            WHERE color_id = (
-                                SELECT color_id FROM panels WHERE panel_id = ?
-                            )
+                            WHERE panel_id = ?
                         `;
 
             db.run(query2, [ type_id, color, message, sub_message, speed, angle, label, panel_id ]);
@@ -252,6 +198,7 @@ app.get("/song-list", (req, res) => {
     console.log("GET SONG LIST");
     const query = `
                     SELECT 
+                        song_id,
                         title,
                         artist,
                         sort_id
@@ -307,37 +254,27 @@ app.post("/add-panel", (req, res) => {
     const { song_id } = req.body;
 
     console.log("add-panel");
-    const query = `INSERT INTO colors DEFAULT VALUES`;
+    console.log(song_id);
+
+    const query = `SELECT COALESCE(MAX(sort_id), 0) AS sort_id FROM panels WHERE song_id = ?`;
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
-      
-        // 新規colorを作成
-        db.run(query, function (err) {
+
+        // 現在の曲中の中で最大ソート値を取得
+        db.get(query, [ song_id ], (err, res) => {
             if (err) {
-                return console.error("Failed to initialize new panel: ", err);
+                return console.error("Failed to get sort_id", err);
             }
 
-            // 今新規作成したカラーパネルのidを取得
-            const color_id = this.lastID;
-            console.log("color_id:", color_id);
+            console.log("sort_id:", res.sort_id);
 
-            // 現在の曲中のパネルのソート最大値を取得
-            const query2 = `SELECT COUNT(*) as sort_id FROM panels WHERE song_id = ?`;
-            db.get(query2, [ song_id ], (err, res) => {
-                if (err) {
-                    return console.error("Failed to get sort_id: ", err);
-                }
-                else {
-                    const query3 = `INSERT INTO panels (song_id, color_id, sort_id) VALUES (?, ?, ?)`;
+            const query2 = `INSERT INTO panels (sort_id, song_id) VALUES(?, ?)`;
 
-                    console.log("sort_id:", res.sort_id);
+            // 新規panelを作成
+            db.run(query2, [ res.sort_id + 1, song_id ]);
 
-                    // パネルを作成
-                    db.run(query3, [ song_id, color_id, res.sort_id + 1]);
-                }
-            });
-        });
+        })
 
         db.run("COMMIT", (err) => {
             if (err) {
@@ -356,11 +293,7 @@ app.post("/add-panel", (req, res) => {
 app.post("/del-panel", (req, res) => {
     const { panel_id } = req.body;
 
-    const query = `DELETE FROM colors 
-                    WHERE color_id = (
-                                SELECT color_id FROM panels 
-                                WHERE panel_id = ?
-                            )`;
+    const query = `DELETE FROM panels WHERE panel_id = ?`;
 
     // const query = `DELETE FROM panels WHERE panel_id = ?`;
 

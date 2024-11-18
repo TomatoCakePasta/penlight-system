@@ -94,7 +94,7 @@ const selectedColorInPanelId = ref(0);
 /**
  * 選択中のセットリスト
  */
-const selectedSongId = ref(0);
+const selectedSongId = ref(1);
 
 // TODO: 選択中の曲のパネルを全て保持する用のオブジェクト用意する?
 // 上記2つから一意にパネル特定できない?[selectedPanelId][selectedSongId]みたいに
@@ -239,7 +239,7 @@ socket.on("getClients", (count) => {
 
 // dbから色を取得
 const getAllPanels = () => {
-  axios.get(`/panel/${selectedSongId.value + 1}`)
+  axios.get(`/panel/${selectedSongId.value}`)
   .then((res) => {
     // alert(res.data.panels.content[0].artist);
     // console.log(res.data.panels.content[0]);
@@ -363,7 +363,7 @@ const delGradationPanel = (idx) => {
  */
 const addPanel = () => {
   const data = {
-    song_id: selectedSongId.value + 1
+    song_id: selectedSongId.value
   }
 
   axios.post("/add-panel", data)
@@ -381,7 +381,7 @@ const delPanel = () => {
   }
 
   isOpenDialog.value = false;
-  
+
   axios.post("/del-panel", data)
     .then((res) => {
       getAllPanels();
@@ -391,7 +391,7 @@ const delPanel = () => {
     })
 }
 
-const isShowDebug = ref(false);
+const isShowDebug = ref(true);
 </script>
 
 <template>
@@ -438,7 +438,7 @@ const isShowDebug = ref(false);
               v-for="(song, index) in songList"
               :key="index"
               link
-              @click="onChangeSong(index)"
+              @click="onChangeSong(song.song_id)"
             >
               <v-list-item-content class="">
                 <div class="ml-10">
