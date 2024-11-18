@@ -15,6 +15,14 @@ const db = new sqlite3.Database("./panel_data.db", (err) => {
         console.error("Failed to connect to databse:", err);
     }
     else {
+        // 外部キーを有効にする
+        db.run("PRAGMA foreign_keys = ON;", (err) => {
+            if (err) {
+                console.error("ERROR ENABLING FOREIGN KEYS:", err);
+            } else {
+                console.log("FOREIGN KEYS ENABLED");
+            }
+        });
         console.log("Connected to the SQLite database.");
     }
 });
@@ -342,7 +350,49 @@ app.post("/add-panel", (req, res) => {
         });
     })
 
-})
+});
+
+// パネル削除
+app.post("/del-panel", (req, res) => {
+    const { panel_id } = req.body;
+
+    const query = `DELETE FROM colors 
+                    WHERE color_id = (
+                                SELECT color_id FROM panels 
+                                WHERE panel_id = ?
+                            )`;
+
+    // const query = `DELETE FROM panels WHERE panel_id = ?`;
+
+    console.log("DEL PANEL", panel_id)
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+      
+        // 指定のカラーパネルを削除
+        // 親のcolorsを削除すると該当するpanelsのレコードも自動削除
+        db.run(query, [ panel_id ], (err) => {
+            if (err) {
+                console.error("Failed deleting data:", err);
+                db.run("ROLLBACK");
+                return res.status(500).send("DELETE ERROR");
+            }
+
+            db.run("COMMIT", (err) => {
+                if (err) {
+                    console.error("ERROR: ", err);
+                    res.status(500).send("SERVER ERROR");
+                }
+                else {
+                    res.status(200).send(true);
+                }
+            });
+            
+        });
+
+    })
+
+});
 
 httpServer.listen(PORT, () => {
     console.log("Server is running ", PORT);

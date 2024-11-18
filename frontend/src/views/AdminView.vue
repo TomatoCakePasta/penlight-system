@@ -112,6 +112,7 @@ const drawer = ref(false);
 const snackBar = ref(false);
 
 const isShowSongList = ref(true);
+const isOpenDialog = ref(false);
 
 onMounted(() => {
   getAllPanels();
@@ -357,12 +358,31 @@ const delGradationPanel = (idx) => {
   colorPanel.value[selectedPanelId.value].color.splice(idx, 1);
 }
 
+/**
+ * 新規パネル追加
+ */
 const addPanel = () => {
   const data = {
     song_id: selectedSongId.value + 1
   }
 
   axios.post("/add-panel", data)
+    .then((res) => {
+      getAllPanels();
+    })
+    .catch((err) => {
+
+    })
+}
+
+const delPanel = () => {
+  const data = {
+    panel_id: colorPanel.value[selectedPanelId.value].panel_id
+  }
+
+  isOpenDialog.value = false;
+  
+  axios.post("/del-panel", data)
     .then((res) => {
       getAllPanels();
     })
@@ -603,10 +623,31 @@ const isShowDebug = ref(false);
               color="amber-darken-3" 
               variant="outlined" 
               class="ml-3"
-              @click="delPanel"
+              @click="isOpenDialog = true"
             >
               DELETE
             </v-btn>
+            <v-dialog
+              v-model="isOpenDialog"
+              width="auto"
+            >
+              <v-card
+                max-width="400"
+                text="Are you sure?"
+              >
+                <template v-slot:actions>
+                  <v-btn
+                    class="ms-auto"
+                    @click="delPanel"
+                  >
+                  OK
+                  </v-btn>
+                </template>
+              </v-card>
+            </v-dialog>
+
+
+
             <v-snackbar
               :timeout="1500"
               color="teal-accent-4"
