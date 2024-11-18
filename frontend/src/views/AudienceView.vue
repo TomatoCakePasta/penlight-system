@@ -166,7 +166,7 @@ const onTestChange = () => {
 <template>
   <div
     id="back-monitor"
-    class="home"
+    class="home user-select-none"
     :style="{ backgroundColor: lightColor }"
   >
     <div class="title pt-16">
@@ -196,6 +196,12 @@ const onTestChange = () => {
 <style scoped>
 .home {
   height: 100vh;
+}
+
+.user-select-none {
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE11 */
 }
 
 .title {

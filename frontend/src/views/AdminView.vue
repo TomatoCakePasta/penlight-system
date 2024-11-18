@@ -391,13 +391,13 @@ const delPanel = () => {
     })
 }
 
-const isShowDebug = ref(true);
+const isShowDebug = ref(false);
 </script>
 
 <template>
   <!-- サイドバー開閉時に下地が映るため黒を設定 -->
   <v-card
-    class="base-back"
+    class="base-back user-select-none"
   >
     <v-layout>
       <v-app-bar
@@ -453,6 +453,22 @@ const isShowDebug = ref(true);
                   <p class="sub-info">
                     {{ song.artist }}
                   </p>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+
+            <!-- セットリスト追加 -->
+            <v-list-item
+              link
+              
+            >
+              <v-list-item-content>
+                <div class="ml-10 sub-info">
+                  <v-list-item-title class="pt-3 flex">
+                    <p>
+                      Add Song
+                    </p>
+                  </v-list-item-title>
                 </div>
               </v-list-item-content>
             </v-list-item>
@@ -719,30 +735,34 @@ const isShowDebug = ref(true);
                     </p>
                   </v-card>
                 </div>
-              </v-col>
+              </v-col>         
             </v-row>
-            <v-btn 
-              @click="getClients"
-              class="ml-2"
-              color="white"
-              variant="outlined"
-            >
-            <p class="">
-              Audience : {{ countClients }}
-            </p>
-            </v-btn>
 
-            <v-btn 
-              class="ml-5" 
-              v-if="drawer"
-              color="white"
-              variant="outlined"
-              @click="addPanel"
-            >
-              Add Panel
-            </v-btn>
+            <div class="mt-5 ml-2">
+              <v-btn 
+                @click="getClients"
+                class=""
+                color="white"
+                variant="outlined"
+              >
+                <p class="">
+                  Audience : {{ countClients }}
+                </p>
+              </v-btn>
+  
+              <v-btn 
+                class="ml-5" 
+                v-if="drawer"
+                color="white"
+                variant="outlined"
+                @click="addPanel"
+              >
+                Add Panel
+              </v-btn>
+  
+              <v-btn @click="getAllPanels" v-if="isShowDebug">GET</v-btn>
+            </div>
 
-            <v-btn @click="getAllPanels" v-if="isShowDebug">GET</v-btn>
 
             <p class="sub-info" v-if="isShowDebug">
               {{ colorPanel }}
@@ -762,6 +782,12 @@ const isShowDebug = ref(true);
   height: 100vh;
   overflow: auto;
   background-color: rgb(23, 23, 23);
+}
+
+.user-select-none {
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE11 */
 }
 
 .base-back {
