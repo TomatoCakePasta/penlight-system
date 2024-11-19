@@ -262,17 +262,17 @@ app.post("/add-panel", (req, res) => {
         db.run("BEGIN TRANSACTION");
 
         // 現在の曲中の中で最大ソート値を取得
-        db.get(query, [ song_id ], (err, res) => {
+        db.get(query, [ song_id ], (err, res2) => {
             if (err) {
                 return console.error("Failed to get sort_id", err);
             }
 
-            console.log("sort_id:", res.sort_id);
+            console.log("sort_id:", res2.sort_id);
 
             const query2 = `INSERT INTO panels (sort_id, song_id) VALUES(?, ?)`;
 
             // 新規panelを作成
-            db.run(query2, [ res.sort_id + 1, song_id ]);
+            db.run(query2, [ res2.sort_id + 1, song_id ]);
 
         })
 
@@ -327,8 +327,79 @@ app.post("/del-panel", (req, res) => {
 
 });
 
-// 新規セットリスト追加
+// セットリスト追加
+app.post("/add-song", (req, res) => {
+    const { title, artist } = req.body;
 
+    // sort_idを取得
+    const query = `SELECT COALESCE(MAX(sort_id), 0) AS sort_id FROM songs`;
+
+    console.log("POST ADD SONG");
+    console.log(title, artist);
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        // 現在の曲中の中で最大ソート値を取得
+        db.get(query, (err, res2) => {
+            if (err) {
+                return console.error("Failed to get sort_id", err);
+            }
+
+            console.log("sort_id:", res2.sort_id);
+
+            const query2 = `INSERT INTO songs (sort_id, title, artist) VALUES(?, ?, ?)`;
+
+            // 新規panelを作成
+            db.run(query2, [ res2.sort_id + 1, title, artist ]);
+
+        })
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                console.error("ERROR: ", err);
+                res.status(500).send("SERVER ERROR");
+            }
+            else {
+                res.status(200).send("UPDATED DATA");
+            }
+        });
+    })
+})
+
+// セットリスト更新
+app.post("/save-song", (req, res) => {
+    const { song_id, title, artist, sort_id } = req.body;
+
+    console.log("POST SAVE SONG");
+    console.log(song_id, title, artist, sort_id);
+
+    // 指定idのレコードを更新
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        const query1 = `
+                        UPDATE songs
+                        SET 
+                            title = ?,
+                            artist = ?,
+                            sort_id = ?
+                        WHERE song_id = ?
+                    `;
+
+        db.run(query1, [ title, artist, sort_id, song_id ]);
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                console.error("ERROR: ", err);
+                res.status(500).send("SERVER ERROR");
+            }
+            else {
+                res.status(200).send("UPDATED DATA");
+            }
+        });
+    })
+});
 
 httpServer.listen(PORT, () => {
     console.log("Server is running ", PORT);

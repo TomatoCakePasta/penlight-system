@@ -78,7 +78,9 @@ const panelType = ref([]);
 
 const editPanel = ref();
 
-const c = ref();
+const rules = {
+  required: (value) => !!value || "This field is required.",
+}
 
 // 選択中のパネルを判別
 /**
@@ -95,6 +97,8 @@ const selectedColorInPanelId = ref(0);
  * 選択中のセットリスト
  */
 const selectedSongId = ref(1);
+const selectedSong = ref();
+const newSong = ref({title: "", artist: ""});
 
 // TODO: 選択中の曲のパネルを全て保持する用のオブジェクト用意する?
 // 上記2つから一意にパネル特定できない?[selectedPanelId][selectedSongId]みたいに
@@ -112,12 +116,16 @@ const drawer = ref(false);
 const snackBar = ref(false);
 
 const isShowSongList = ref(true);
-const isOpenDialog = ref(false);
-const isOpenSongDialog = ref(false);
+const isOpenDeleteDialog = ref(false);
+const isOpenAddSongDialog = ref(false);
+const isOpenSongEditDialog = ref(false);
+
+const isSongEditFormValid = ref(false);
+const isSongAddFormValid = ref(false);
 
 onMounted(() => {
   getAllPanels();
-  getALlSongs();
+  getAllSongs();
   getAllTypes();
 })
 
@@ -140,13 +148,14 @@ const onChangeLight = (idx, panel) => {
   selectedPanelId.value = idx
 }
 
-const onChangeSong = (idx) => {
+const onChangeSong = (song) => {
   // すでに選択済みなら編集モード
-  if (selectedSongId.value === idx) {
-    alert("Edit mode");
+  if (selectedSongId.value === song.song_id) {
+    isOpenSongEditDialog.value = true;
+    selectedSong.value = song;
   }
   else {
-    selectedSongId.value = idx;
+    selectedSongId.value = song.song_id;
   
     // その曲のパネルを取得
     getAllPanels();
@@ -269,7 +278,7 @@ const getAllPanels = () => {
 }
 
 // セットリストを取得
-const getALlSongs = () => {
+const getAllSongs = () => {
   axios.get("/song-list")
   .then((res) => {
     songList.value = res.data.songs.content;
@@ -387,7 +396,7 @@ const delPanel = () => {
     panel_id: colorPanel.value[selectedPanelId.value].panel_id
   }
 
-  isOpenDialog.value = false;
+  isOpenDeleteDialog.value = false;
 
   axios.post("/del-panel", data)
     .then((res) => {
@@ -398,7 +407,52 @@ const delPanel = () => {
     })
 }
 
-const isShowDebug = ref(false);
+/**
+ * セットリスト更新
+ */
+const saveSong = () => {
+  const updateSong = selectedSong.value;
+  const data = {
+    song_id: updateSong.song_id,
+    title: updateSong.title,
+    artist: updateSong.artist,
+    sort_id: updateSong.sort_id
+  }
+
+  axios.post("/save-song", data)
+    .then((res) => {
+      // 再度DBを読み込み
+      getAllSongs();
+
+      isOpenSongEditDialog.value = false;
+    })
+    .catch((err) => {
+
+    });
+}
+
+/**
+ * セットリスト追加
+ */
+const addSong = () => {
+  const data = {
+    title: newSong.value.title,
+    artist: newSong.value.artist
+  }
+
+  axios.post("/add-song", data)
+    .then((res) => {
+      getAllSongs();
+      isOpenAddSongDialog.value = false;
+      newSong.title = "";
+      newSong.artist = "";
+    })
+    .catch((err) => {
+
+    })
+}
+
+const isShowDebug = ref(true);
 </script>
 
 <template>
@@ -445,7 +499,7 @@ const isShowDebug = ref(false);
               v-for="(song, index) in songList"
               :key="index"
               link
-              @click="onChangeSong(song.song_id)"
+              @click="onChangeSong(song)"
             >
               <v-list-item-content class="">
                 <div class="ml-10">
@@ -456,23 +510,109 @@ const isShowDebug = ref(false);
                     <p>
                       {{ song.title }}
                     </p>
+                    <!-- <v-text-field v-model="song.title"></v-text-field> -->
                   </v-list-item-title>
                   <p class="sub-info">
                     {{ song.artist }}
                   </p>
+                  <!-- <v-text-field v-model="song.artist"></v-text-field> -->
                 </div>
               </v-list-item-content>
             </v-list-item>
+
+            <!-- セットリスト修正 -->
+            <v-dialog
+              v-model="isOpenSongEditDialog"
+              class="text-center"
+            >
+              <v-card
+                title="Song Edit"
+                max-width="200"
+                color="grey-darken-4"
+              >
+              <v-form v-model="isSongEditFormValid">
+                <v-text-field 
+                  label="Song title"
+                  v-model="selectedSong.title"
+                  maxlength="20"
+                  :rules="[rules.required]"
+                >
+                </v-text-field>
+                <v-text-field
+                  label="Song artist"
+                  v-model="selectedSong.artist"
+                  maxlength="20"
+                  :rules="[rules.required]"
+                >
+                </v-text-field>
+                <v-card-actions>
+                  <v-btn class="ms-auto" @click="isOpenSongEditDialog = false">
+                    CLOSE
+                  </v-btn>
+                  <v-btn
+                    class="ms-auto"
+                    :disabled="!isSongEditFormValid"
+                    @click="saveSong"
+                  >
+                  SAVE
+                  </v-btn>
+                </v-card-actions>
+              </v-form>
+              </v-card>
+            </v-dialog>
+
+            <!-- セットリスト追加 -->
+            <v-dialog
+              v-model="isOpenAddSongDialog"
+              class="text-center"
+            >
+              <v-card
+                title="Add Song"
+                max-width="200"
+                variant="flat"
+                color="grey-darken-4"
+              >
+                <v-form v-model="isSongAddFormValid">
+                  <v-text-field 
+                    label="Song title"
+                    v-model="newSong.title"
+                    maxlength="20"
+                    :rules="[rules.required]"
+                  >
+                  </v-text-field>
+                  <v-text-field
+                    label="Song artist"
+                    v-model="newSong.artist"
+                    maxlength="20"
+                    :rules="[rules.required]"
+                  >
+                  </v-text-field>
+                  <v-card-actions>
+                    <v-btn class="ms-auto" @click="isOpenAddSongDialog = false">
+                      CLOSE
+                    </v-btn>
+                    <v-btn
+                      class="ms-auto"
+                      :disabled="!isSongAddFormValid"
+                      @click="addSong"
+                    >
+                    SAVE
+                    </v-btn>
+                  </v-card-actions>
+                </v-form>
+              </v-card>
+            </v-dialog>
 
             <!-- セットリスト追加 見栄えのため透明なボタンにする-->
             <v-list-item
               link
               class="song-list"
+              @click="isOpenAddSongDialog = true"
             >
               <v-list-item-content>
                 <div class="ml-10 sub-info">
                   <v-list-item-title class="pt-3 flex">
-                    <p class="pop-msg">
+                    <p class="pop-msg pb-4">
                       Add Song
                     </p>
                   </v-list-item-title>
@@ -646,19 +786,24 @@ const isShowDebug = ref(false);
               color="amber-darken-3" 
               variant="outlined" 
               class="ml-3"
-              @click="isOpenDialog = true"
+              @click="isOpenDeleteDialog = true"
             >
               DELETE
             </v-btn>
             <v-dialog
-              v-model="isOpenDialog"
+              v-model="isOpenDeleteDialog"
               width="auto"
             >
               <v-card
-                max-width="400"
+                
                 text="Are you sure?"
               >
                 <template v-slot:actions>
+                  <v-btn
+                    @click="isOpenDeleteDialog = false"
+                  >
+                    Cancel
+                  </v-btn>
                   <v-btn
                     class="ms-auto"
                     @click="delPanel"
@@ -702,6 +847,8 @@ const isShowDebug = ref(false);
         <p class="sub-info" v-if="isShowDebug">
           select {{ selectedPanelId }}
           song {{ selectedSongId }} 
+          {{ isOpenSongEditDialog }}
+          {{ songList }}
         </p>
         <div class="home">
           <div class="title pt-5">
