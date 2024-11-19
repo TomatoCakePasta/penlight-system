@@ -401,6 +401,37 @@ app.post("/save-song", (req, res) => {
     })
 });
 
+// セットリスト削除
+app.post("/del-song", (req, res) => {
+    const { song_id } = req.body;
+
+    const query = `DELETE FROM songs WHERE song_id = ?`;
+
+    console.log("POST DEL SONG");
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        db.run(query, [ song_id ], (err) => {
+            if (err) {
+                console.error("Failed deleting data:", err);
+                db.run("ROLLBACK");
+                return res.status(500).send("DELETE ERROR");
+            }
+
+            db.run("COMMIT", (err) => {
+                if (err) {
+                    console.error("ERROR: ", err);
+                    res.status(500).send("SERVER ERROR");
+                }
+                else {
+                    res.status(200).send(true);
+                }
+            });
+        });
+    })
+});
+
 httpServer.listen(PORT, () => {
     console.log("Server is running ", PORT);
 })

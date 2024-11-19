@@ -97,11 +97,9 @@ const selectedColorInPanelId = ref(0);
  * 選択中のセットリスト
  */
 const selectedSongId = ref(1);
-const selectedSong = ref();
+const selectedEditSong = ref();
+const selectedDelSongId = ref();
 const newSong = ref({title: "", artist: ""});
-
-// TODO: 選択中の曲のパネルを全て保持する用のオブジェクト用意する?
-// 上記2つから一意にパネル特定できない?[selectedPanelId][selectedSongId]みたいに
 
 const socket = props.socket;
 
@@ -117,11 +115,14 @@ const snackBar = ref(false);
 
 const isShowSongList = ref(true);
 const isOpenDeleteDialog = ref(false);
-const isOpenAddSongDialog = ref(false);
+const isOpenSongAddDialog = ref(false);
 const isOpenSongEditDialog = ref(false);
+const isOpenSongDelDialog = ref(false);
 
 const isSongEditFormValid = ref(false);
 const isSongAddFormValid = ref(false);
+
+const isAgreeSongDel = ref(false);
 
 onMounted(() => {
   getAllPanels();
@@ -152,7 +153,7 @@ const onChangeSong = (song) => {
   // すでに選択済みなら編集モード
   if (selectedSongId.value === song.song_id) {
     isOpenSongEditDialog.value = true;
-    selectedSong.value = song;
+    selectedEditSong.value = song;
   }
   else {
     selectedSongId.value = song.song_id;
@@ -319,23 +320,6 @@ const changeTextToArray = () => {
  * パネルDB更新 colorPanelでパネル情報を送信
  */
 const saveColorPanel = () => {
-  /*
-  const newData = editPanel.value;
-  console.log(newData);
-
-  const data = {
-    panel_id: newData.panel_id,
-    sort_id: newData.sort_id,
-    color: newData.color.join(","),
-    message: newData.message,
-    sub_message: newData.sub_message,
-    speed: newData.speed,
-    angle: newData.angle,
-    label: newData.label,
-    type_id: newData.type_id    
-  }
-    */
-
   let datas = colorPanel.value;
 
   datas.forEach((data) => {
@@ -411,7 +395,7 @@ const delPanel = () => {
  * セットリスト更新
  */
 const saveSong = () => {
-  const updateSong = selectedSong.value;
+  const updateSong = selectedEditSong.value;
   const data = {
     song_id: updateSong.song_id,
     title: updateSong.title,
@@ -443,7 +427,7 @@ const addSong = () => {
   axios.post("/add-song", data)
     .then((res) => {
       getAllSongs();
-      isOpenAddSongDialog.value = false;
+      isOpenSongAddDialog.value = false;
       newSong.title = "";
       newSong.artist = "";
     })
@@ -452,7 +436,27 @@ const addSong = () => {
     })
 }
 
-const isShowDebug = ref(true);
+/**
+ * セットリスト削除
+ */
+const delSong = () => {
+  const data = {
+    song_id: selectedDelSongId.value
+  }
+
+  axios.post("/del-song", data)
+    .then((res) => {
+      getAllSongs();
+      selectedDelSongId.value = "";
+      isOpenSongDelDialog.value = false; 
+      isAgreeSongDel.value = false;
+    })
+    .catch((err) => {
+
+    })
+}
+
+const isShowDebug = ref(false);
 </script>
 
 <template>
@@ -510,12 +514,10 @@ const isShowDebug = ref(true);
                     <p>
                       {{ song.title }}
                     </p>
-                    <!-- <v-text-field v-model="song.title"></v-text-field> -->
                   </v-list-item-title>
                   <p class="sub-info">
                     {{ song.artist }}
                   </p>
-                  <!-- <v-text-field v-model="song.artist"></v-text-field> -->
                 </div>
               </v-list-item-content>
             </v-list-item>
@@ -532,15 +534,15 @@ const isShowDebug = ref(true);
               >
               <v-form v-model="isSongEditFormValid">
                 <v-text-field 
-                  label="Song title"
-                  v-model="selectedSong.title"
+                  label="Title"
+                  v-model="selectedEditSong.title"
                   maxlength="20"
                   :rules="[rules.required]"
                 >
                 </v-text-field>
                 <v-text-field
-                  label="Song artist"
-                  v-model="selectedSong.artist"
+                  label="Artist"
+                  v-model="selectedEditSong.artist"
                   maxlength="20"
                   :rules="[rules.required]"
                 >
@@ -563,7 +565,7 @@ const isShowDebug = ref(true);
 
             <!-- セットリスト追加 -->
             <v-dialog
-              v-model="isOpenAddSongDialog"
+              v-model="isOpenSongAddDialog"
               class="text-center"
             >
               <v-card
@@ -574,21 +576,21 @@ const isShowDebug = ref(true);
               >
                 <v-form v-model="isSongAddFormValid">
                   <v-text-field 
-                    label="Song title"
+                    label="Title"
                     v-model="newSong.title"
                     maxlength="20"
                     :rules="[rules.required]"
                   >
                   </v-text-field>
                   <v-text-field
-                    label="Song artist"
+                    label="Artist"
                     v-model="newSong.artist"
                     maxlength="20"
                     :rules="[rules.required]"
                   >
                   </v-text-field>
                   <v-card-actions>
-                    <v-btn class="ms-auto" @click="isOpenAddSongDialog = false">
+                    <v-btn class="ms-auto" @click="isOpenSongAddDialog = false">
                       CLOSE
                     </v-btn>
                     <v-btn
@@ -603,11 +605,52 @@ const isShowDebug = ref(true);
               </v-card>
             </v-dialog>
 
+            <!-- セットリスト削除 -->
+            <v-dialog
+              v-model="isOpenSongDelDialog"
+              class="text-center"
+            >
+              <v-card
+                title="Delete Song"
+                max-width="200"
+                variant="flat"
+                color="grey-darken-4"
+              >
+                <v-form v-model="isSongAddFormValid">
+                  <v-select
+                    :items="songList"
+                    label="Select Song"
+                    v-model="selectedDelSongId"
+                    item-value="song_id"
+                  >
+                    <template v-slot:item="{ props, item }">
+                      <v-list-item v-bind="props" :subtitle="item.raw.artist"></v-list-item>
+                    </template>
+                  </v-select>
+                  <!-- 同意のチェックボタン -->
+                  <v-checkbox v-model="isAgreeSongDel" label="Are you sure?"></v-checkbox>
+                  
+                  <v-card-actions>
+                    <v-btn class="ms-auto" @click="isOpenSongDelDialog = false; isAgreeSongDel = false">
+                      CANCEL
+                    </v-btn>
+                    <v-btn
+                      class="ms-auto"
+                      :disabled="!isAgreeSongDel"
+                      @click="delSong"
+                    >
+                    DELETE
+                    </v-btn>
+                  </v-card-actions>
+                </v-form>
+              </v-card>
+            </v-dialog>
+
             <!-- セットリスト追加 見栄えのため透明なボタンにする-->
             <v-list-item
               link
               class="song-list"
-              @click="isOpenAddSongDialog = true"
+              @click="isOpenSongAddDialog = true"
             >
               <v-list-item-content>
                 <div class="ml-10 sub-info">
@@ -619,6 +662,24 @@ const isShowDebug = ref(true);
                 </div>
               </v-list-item-content>
             </v-list-item>
+
+            <!-- セットリスト削除 -->
+            <v-list-item
+              link
+              class="song-list"
+              @click="isOpenSongDelDialog = true"
+            >
+              <v-list-item-content>
+                <div class="ml-10 sub-info">
+                  <v-list-item-title class="pt-3 flex">
+                    <p class="pop-msg pb-4">
+                      Delete Song
+                    </p>
+                  </v-list-item-title>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+
           </v-list>
         </div>
 
@@ -633,14 +694,6 @@ const isShowDebug = ref(true);
               class="mx-auto"
             ></v-color-picker>
           </div>
-
-          <!-- <v-select
-            label="Type"
-            v-model="editPanel.type"
-            :items="typeList"
-            class="mt-5 ml-3 mr-3"
-          >
-          </v-select> -->
 
           <v-container fluid>
             <v-radio-group
@@ -719,16 +772,6 @@ const isShowDebug = ref(true);
                 class="mb-5"
               >
                 <p class="sub-info">Speed {{ colorPanel[selectedPanelId].speed }}</p>
-                <!-- <v-number-input
-                  :reverse="false"
-                  controlVariant="stacked"
-                  :min="0"
-                  :max="1000"
-                  :hideInput="false"
-                  :inset="false"
-                  variant="filled"
-                  v-model="colorPanel[selectedPanelId].speed">
-                </v-number-input> -->
                 <v-slider
                   v-model="colorPanel[selectedPanelId].speed"
                   max="200"
@@ -747,17 +790,6 @@ const isShowDebug = ref(true);
                 class="mb-5"
               >
                 <p class="sub-info">Angle  {{ colorPanel[selectedPanelId].angle }}</p>
-                <!-- <v-number-input
-                  :reverse="false"
-                  controlVariant="stacked"
-                  :min="0"
-                  :max="360"
-                  :hideInput="false"
-                  :inset="false"
-                  variant="filled"
-                  v-model="colorPanel[selectedPanelId].angle"
-                >
-                </v-number-input> -->
                 <v-slider
                   v-model="colorPanel[selectedPanelId].angle"
                   max="360"
@@ -773,15 +805,6 @@ const isShowDebug = ref(true);
           </v-row>
 
           <div class="d-flex">
-            <!-- <v-btn
-              class="ml-auto mr-3 mb-3"
-              variant="outlined"
-              @click="saveColorPanel"
-            >
-              SAVE
-            </v-btn> -->
-
-            <!-- TODO: 確認ダイアログ出す Are you sure? IDでパネル削除する削除APIを呼ぶ-->
             <v-btn 
               color="amber-darken-3" 
               variant="outlined" 
@@ -795,26 +818,26 @@ const isShowDebug = ref(true);
               width="auto"
             >
               <v-card
-                
+                variant="flat"
+                color="grey-darken-4"
                 text="Are you sure?"
               >
-                <template v-slot:actions>
+                <v-card-actions>
                   <v-btn
                     @click="isOpenDeleteDialog = false"
+                    class="mr-10"
                   >
                     Cancel
                   </v-btn>
                   <v-btn
-                    class="ms-auto"
+                    class="ms-auto ml-10"
                     @click="delPanel"
                   >
-                  OK
+                    Delete
                   </v-btn>
-                </template>
+                </v-card-actions>
               </v-card>
             </v-dialog>
-
-
 
             <v-snackbar
               :timeout="1500"
@@ -870,11 +893,6 @@ const isShowDebug = ref(true);
                     'selected': selectedPanelId === idx
                   }"
                 >
-                  <!-- <v-card
-                    @click="onChangeLight(idx, panel)"
-                    :style="{ background: setPanelColor(panel) }"
-                    height="100"
-                  > -->
                   <v-card
                     @click="onChangeLight(idx, panel)"
                     :style="{background: setPanelColor(panel)}"
@@ -885,7 +903,6 @@ const isShowDebug = ref(true);
                       :style="(panel.type === 'home' || panel.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
                       >
                       {{ panel.label }}&nbsp;
-                      <!-- {{ panel.color }} -->
                     </p>
                   </v-card>
                 </div>
