@@ -113,6 +113,7 @@ const snackBar = ref(false);
 
 const isShowSongList = ref(true);
 const isOpenDialog = ref(false);
+const isOpenSongDialog = ref(false);
 
 onMounted(() => {
   getAllPanels();
@@ -140,10 +141,16 @@ const onChangeLight = (idx, panel) => {
 }
 
 const onChangeSong = (idx) => {
-  selectedSongId.value = idx;
-
-  // その曲のパネルを取得
-  getAllPanels();
+  // すでに選択済みなら編集モード
+  if (selectedSongId.value === idx) {
+    alert("Edit mode");
+  }
+  else {
+    selectedSongId.value = idx;
+  
+    // その曲のパネルを取得
+    getAllPanels();
+  }
 }
 
 // 現在選択中のパネル情報を取得
@@ -457,15 +464,15 @@ const isShowDebug = ref(false);
               </v-list-item-content>
             </v-list-item>
 
-            <!-- セットリスト追加 -->
+            <!-- セットリスト追加 見栄えのため透明なボタンにする-->
             <v-list-item
               link
-              
+              class="song-list"
             >
               <v-list-item-content>
                 <div class="ml-10 sub-info">
                   <v-list-item-title class="pt-3 flex">
-                    <p>
+                    <p class="pop-msg">
                       Add Song
                     </p>
                   </v-list-item-title>
@@ -811,6 +818,16 @@ const isShowDebug = ref(false);
 .sub-info {
   color: rgb(158, 158, 158);
   font-size: 15px;
+}
+
+.pop-msg {
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.song-list:hover .pop-msg {
+  color: white;
+  opacity: 1;
 }
 
 .panel {
