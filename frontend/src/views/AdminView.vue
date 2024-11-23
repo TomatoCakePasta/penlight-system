@@ -1,6 +1,7 @@
 <script setup>
 import { nextTick, ref, onMounted, toRaw } from "vue"
 import axios from "axios";
+import { useRouter } from "vue-router";
 
 const props = defineProps({
     socket: Object,
@@ -8,6 +9,8 @@ const props = defineProps({
 });
 
 const countClients = ref(0);
+
+const router = useRouter();
 
 // baseURLを設定
 axios.defaults.baseURL = props.url;
@@ -129,6 +132,10 @@ onMounted(() => {
   getAllSongs();
   getAllTypes();
 })
+
+const onLogout = () => {
+  router.push({ name: "login" });
+}
 
 /**
  * 
@@ -476,6 +483,7 @@ const isShowDebug = ref(false);
         <v-toolbar-title>DJ LIVE {{ (!isShowSongList && drawer) ? "- Edit Mode" : "" }}</v-toolbar-title>
   
         <v-spacer></v-spacer>
+        <v-btn class="mx-3" @click="onLogout">Exit</v-btn>
       </v-app-bar>
   
       <!-- permanentで展開時にmainコンテンツ -->

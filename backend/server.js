@@ -6,6 +6,7 @@ import cors from "cors";
 import https from "https";
 import fs from 'fs';
 import dotenv from "dotenv";
+import bcrypt from "bcrypt";
 
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
 dotenv.config({ path: envFile });
@@ -129,6 +130,74 @@ io.on("connection", (socket) => {
         io.emit("getClients", countUser);
     });
 })
+
+app.post("/signup", (req, res) => {
+    const { name, rawPass } = req.body;
+
+    // ハッシュ化
+    const hashedPass = bcrypt.hashSync(rawPass, 10);
+
+    console.log(name, rawPass, hashedPass);
+
+    // 名前の重複チェック
+    const query = `SELECT EXISTS(SELECT 1 FROM users WHERE name = ?) AS isExistUser`;
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        db.get(query, [ name ], (err2, res2) => {
+            if (err2) {
+                db.run("ROLLBACK");
+                return console.error("Failed to search user:", err2);
+            }
+
+            // 新しい名前の場合
+            if (!res2.isExistUser) {
+                // 新規データ挿入
+                const query2 = `INSERT INTO users (name, hashed_pass) VALUES(?, ?)`;
+
+                db.run(query2, [ name, hashedPass ], (err3) => {
+                    if (err3) {
+                        db.run("ROLLBACK");
+                        return console.error("Failed to insert new user:", err3);
+                    }
+
+                    db.run("COMMIT");
+                    console.log("Insert new user");
+                });
+            }
+            else {
+                db.run("ROLLBACK");
+                console.error("Username already exits");
+            }
+        });
+    });
+});
+
+app.post("/login", (req, res) => {
+    const { name, rawPass } = req.body;
+
+    const query = `SELECT hashed_pass FROM users WHERE name = ?`;
+
+    console.log(name);
+
+    db.serialize(() => {
+        // 一致するユーザのパスを取得
+        db.get(query, [ name ], (err2, res2) => {
+            if (res2) {
+                console.log(res2.hashed_pass);
+                if (bcrypt.compareSync(rawPass, res2.hashed_pass)) {
+                    console.log("OK");
+                    return res.status(200).send({ flag: true });
+                }
+            }
+            else {
+                console.log(res2);
+                return res.send({ flag: false });
+            }
+        })
+    });
+});
 
 // TODO: apiファイルとか分割　MC
 // TODO: 選択した曲のパネルのみ取得
