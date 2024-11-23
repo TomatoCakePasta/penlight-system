@@ -31,3 +31,4 @@ coverage
 
 # 追加
 *.db
+*.env
