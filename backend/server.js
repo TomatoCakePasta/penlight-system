@@ -5,25 +5,20 @@ import sqlite3 from "sqlite3";
 import cors from "cors";
 import https from "https";
 import fs from 'fs';
+import dotenv from "dotenv";
 
-const PORT = 3000;
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: envFile });
+
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 // const httpServer = createServer(app);
-
-const url = "project-lab-tokyo.com";
-
-const options = {
-    key: fs.readFileSync(`../../../etc/letsencrypt/live/${url}/privkey.pem`),
-    cert: fs.readFileSync(`../../../etc/letsencrypt/live/${url}/cert.pem`),
-}
 
 // httpリクエストをhttpsにリダイレクト
 // createServer(app).listen(3002, () => {
 //     console.log("HTTP Server running on port 80");
 // });
-
-const httpsServer = https.createServer(options, app);
 
 // dbオブジェクトの取得
 const db = new sqlite3.Database("./panel_data.db", (err) => {
@@ -68,8 +63,31 @@ app.use(cors({
 // JSON形式のリクエストボディをパース
 app.use(express.json());
 
+let server;
+let protocol = "";
+
+console.log(`Environment: ${process.env.NODE_ENV}`);
+
+// 本番環境
+if (process.env.NODE_ENV === "production") {
+    const url = process.env.URL;
+
+    const options = {
+        key: fs.readFileSync(`../../../etc/letsencrypt/live/${url}/privkey.pem`),
+        cert: fs.readFileSync(`../../../etc/letsencrypt/live/${url}/cert.pem`),
+    }
+
+    server = https.createServer(options, app);
+
+    protocol = "HTTPS";
+}
+else {
+    server = createServer(app);
+    protocol = "HTTP";
+}
+
 // const io = new Server(httpServer, {
-const io = new Server(httpsServer, {
+const io = new Server(server, {
     cors: {
         origin: "*", // 許可したいオリジンを指定
         methods: ["GET", "POST"], // 許可したいHTTPメソッドを指定
@@ -449,9 +467,13 @@ app.post("/del-song", (req, res) => {
     })
 });
 
-httpsServer.listen(PORT, () => {
-    console.log(`HTTPS Server running on port ${PORT}`);
+server.listen(PORT, () => {
+    console.log(`${protocol} Server is running on port ${PORT}`);
 });
+
+// httpsServer.listen(PORT, () => {
+//     console.log(`HTTPS Server running on port ${PORT}`);
+// });
 
 // httpServer.listen(PORT, () => {
 //     console.log("Server is running ", PORT);
