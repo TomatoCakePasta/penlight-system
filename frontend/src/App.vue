@@ -5,9 +5,7 @@ import HelloWorld from './components/HelloWorld.vue'
 import io from "socket.io-client";
 
 const PORT = 3000;
-// const url = `http://tk2-408-45029.vs.sakura.ne.jp:${PORT}`;
-// const url = `http://localhost:${PORT}`;
-const url = `https://project-lab-tokyo.com:${PORT}`;
+const url = `${import.meta.env.VITE_APP_URL}:${PORT}`;
 
 // const socket = io.connect(`127.0.0.1:${PORT}`);
 const socket = io.connect(url)
