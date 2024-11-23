@@ -3,11 +3,27 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import sqlite3 from "sqlite3";
 import cors from "cors";
+import https from "https";
+import fs from 'fs';
 
 const PORT = 3000;
 
 const app = express();
-const httpServer = createServer(app);
+// const httpServer = createServer(app);
+
+const url = "project-lab-tokyo.com";
+
+const options = {
+    key: fs.readFileSync(`../../../etc/letsencrypt/live/${url}/privkey.pem`),
+    cert: fs.readFileSync(`../../../etc/letsencrypt/live/${url}/cert.pem`),
+}
+
+// httpリクエストをhttpsにリダイレクト
+// createServer(app).listen(3002, () => {
+//     console.log("HTTP Server running on port 80");
+// });
+
+const httpsServer = https.createServer(options, app);
 
 // dbオブジェクトの取得
 const db = new sqlite3.Database("./panel_data.db", (err) => {
@@ -52,7 +68,8 @@ app.use(cors({
 // JSON形式のリクエストボディをパース
 app.use(express.json());
 
-const io = new Server(httpServer, {
+// const io = new Server(httpServer, {
+const io = new Server(httpsServer, {
     cors: {
         origin: "*", // 許可したいオリジンを指定
         methods: ["GET", "POST"], // 許可したいHTTPメソッドを指定
@@ -432,6 +449,10 @@ app.post("/del-song", (req, res) => {
     })
 });
 
-httpServer.listen(PORT, () => {
-    console.log("Server is running ", PORT);
-})
+httpsServer.listen(PORT, () => {
+    console.log(`HTTPS Server running on port ${PORT}`);
+});
+
+// httpServer.listen(PORT, () => {
+//     console.log("Server is running ", PORT);
+// })
