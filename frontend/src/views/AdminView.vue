@@ -757,7 +757,7 @@ const isShowDebug = ref(false);
           </v-text-field>
 
           <v-text-field
-            v-model="colorPanel[selectedPanelId].sub_essage"
+            v-model="colorPanel[selectedPanelId].sub_message"
             label="Sub Message"
             class="ml-3 mr-3"
           >

@@ -7,8 +7,7 @@ const props = defineProps({
 
 const lightColor = ref("black")
 const msg = ref("DJ LIVE 2/16");
-const subMsg = ref("");
-const title = "Coming soon ...";
+const subMsg = ref("Coming soon ...");
 
 const socket = props.socket;
 const isFlash = ref(false);
@@ -31,7 +30,7 @@ socket.on("changeColor", (newColor) => {
   // 新しい色に更新
   lightColor.value = plainNewColor.color[0];
   msg.value = plainNewColor.message;
-  subMsg.value = plainNewColor.subMessage;
+  subMsg.value = plainNewColor.sub_message;
 
   // 各種モード
   switch(plainNewColor.type) {
@@ -173,22 +172,11 @@ const onTestChange = () => {
       <h1>{{ msg }}</h1>
       <!-- <p>{{ subMsg }}</p> -->
     </div>
-    <h1 v-if="msg" class="title loading">
-      <!-- TODO: v-forで短く書きたい -->
-      <span class="no1">C</span>
-      <span class="no2">O</span>
-      <span class="no3">M</span>
-      <span class="no4">I</span>
-      <span class="no5">N</span>
-      <span class="no6">G</span>
-      <span class="no7">&nbsp;</span>
-      <span class="no8">S</span>
-      <span class="no9">O</span>
-      <span class="no10">O</span>
-      <span class="no11">N</span>
-      <span class="no12">.</span>
-      <span class="no13">.</span>
-      <span class="no14">.</span>
+    <h1 v-if="subMsg" class="title loading">
+      <!-- 別パネルのメッセージに切り替わる際に前のアニメーションをリセットするために要素を再作成する
+       そのためにkeyを動的に変更することで再生成される
+      -->
+      <span v-for="(char, index) in subMsg.split('')" :key="subMsg + index" :class="'no' + (index + 1)">{{ char }}</span>
     </h1>
   </div>
 </template>
@@ -254,7 +242,7 @@ const onTestChange = () => {
 }
 
 .loading {
-  color: #000;
+  color: #000000;
   font-size: 30px;
   font-weight: bold;
   text-align: center;
@@ -275,7 +263,7 @@ const onTestChange = () => {
 
 .loading span {
   display: inline-block;
-  background: #000;
+  background: #ffffff00;
   width: 40px;
   height: 40px;
   line-height: 40px;
