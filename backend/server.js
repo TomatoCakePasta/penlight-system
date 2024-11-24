@@ -8,6 +8,9 @@ import fs from 'fs';
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 
+// ********* 重要 ************
+// SSL証明書は3ヶ月で切れるから更新必須
+
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
 dotenv.config({ path: envFile });
 
@@ -139,8 +142,8 @@ app.post("/signup", (req, res) => {
 
     console.log(name, rawPass, hashedPass);
 
-    // 名前の重複チェック
-    const query = `SELECT EXISTS(SELECT 1 FROM users WHERE name = ?) AS isExistUser`;
+    // あらかじめ設定した規程ユーザか確認
+    const query = `SELECT user_id FROM users WHERE name = ?`;
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
@@ -148,27 +151,31 @@ app.post("/signup", (req, res) => {
         db.get(query, [ name ], (err2, res2) => {
             if (err2) {
                 db.run("ROLLBACK");
+                res.send({ flag: false });
                 return console.error("Failed to search user:", err2);
             }
 
-            // 新しい名前の場合
-            if (!res2.isExistUser) {
+            // 規程ユーザの場合
+            if (res2) {
                 // 新規データ挿入
-                const query2 = `INSERT INTO users (name, hashed_pass) VALUES(?, ?)`;
+                const query2 = `UPDATE users SET hashed_pass = ? WHERE user_id = ?`;
 
-                db.run(query2, [ name, hashedPass ], (err3) => {
+                db.run(query2, [ hashedPass, res2.user_id ], (err3) => {
                     if (err3) {
                         db.run("ROLLBACK");
-                        return console.error("Failed to insert new user:", err3);
+                        res.send({ flag: false });
+                        return console.error("Failed to update user pass:", err3);
                     }
 
                     db.run("COMMIT");
-                    console.log("Insert new user");
+                    console.log("Update user pass");
+                    res.send({ flag: true });
                 });
             }
             else {
                 db.run("ROLLBACK");
-                console.error("Username already exits");
+                console.error("Username Doesn't exist");
+                res.send({ flag: false });
             }
         });
     });
@@ -185,10 +192,15 @@ app.post("/login", (req, res) => {
         // 一致するユーザのパスを取得
         db.get(query, [ name ], (err2, res2) => {
             if (res2) {
-                console.log(res2.hashed_pass);
+                // console.log(res2.hashed_pass);
                 if (bcrypt.compareSync(rawPass, res2.hashed_pass)) {
                     console.log("OK");
-                    return res.status(200).send({ flag: true });
+                    const session = { name: name }
+                    return res.status(200).send({ flag: true, session });
+                }
+                else {
+                    console.log("NO MATCH");
+                    return res.send({ flag: false });
                 }
             }
             else {

@@ -42,9 +42,33 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   console.log(from, to);
 
+  // console.log(document.cookie);
+
+  // Cookie の値を取得
+  const cookies = document.cookie
+  .split('; ')
+  .reduce((acc, cookie) => {
+    const [key, value] = cookie.split('=');
+    acc[key] = decodeURIComponent(value);
+    return acc;
+  }, {});
+
+  let session;
+
+  // JSON.parse を使ってオブジェクトに戻す
+  if (cookies.session) {
+    try {
+      session = JSON.parse(cookies.session);
+      console.log(session); // { userId: 123, token: "abc123" }
+    } catch (e) {
+      console.error('Invalid JSON in session cookie');
+    }
+  }
+
+  // console.log("session:", session);
+
   // 未認証で管理者ページにアクセスした場合はリダイレクト
-  // TODO: ログイン管理用の変数で判定する,そうすればリロードも通せる
-  if (from.name !== 'login' && to.name === 'admin') {
+  if (to.name === 'admin' && session === undefined) {
     next({ name: 'login' });
   }
   else {

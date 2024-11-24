@@ -13,6 +13,7 @@ axios.defaults.baseURL = props.url;
 const router = useRouter();
 
 const visible = ref(false);
+const isSignUpMode = ref(false);
 
 const name = ref("");
 const rawPass = ref("");
@@ -27,6 +28,14 @@ const onLogin = () => {
     .then((res) => {
       if (res.data.flag) {
         clearForm();
+
+        console.log(res.data.session);
+        // Cookieの有効期間を秒数指定 60分で自動削除
+        const maxAge = 60 * 60;
+
+        // セッションCookieを取得し、JSON形式でブラウザに保存
+        document.cookie = `session=${JSON.stringify(res.data.session)}; max-age=${maxAge};`;
+
         // ログイン完了
         router.push({ name: "admin" });
       }
@@ -41,6 +50,26 @@ const onLogin = () => {
   //  axios.post("/signup", data);
 }
 
+const onSignUp = () => {
+  const data = {
+    name: name.value,
+    rawPass: rawPass.value
+  }
+
+  axios.post("/signup", data)
+    .then((res) => {
+      if (res.flag) {
+        router.push({ name: "login" });
+      }
+      else {
+        console.log("Failed to sign up");
+      }
+    })
+    .catch((err) => {
+      console.error("Error:", err);
+    })
+}
+
 const clearForm = () => {
   name.value = "";
   rawPass.value = "";
@@ -52,7 +81,7 @@ const clearForm = () => {
   <div class="home">
     <div class="d-flex center">
       <img src="../assets/dj.png" alt="" width="100" class="ma-5">
-      <h1 class="white mt-10">Login</h1>
+      <h1 class="white mt-10">{{ isSignUpMode ? "Sign up" : "Log in" }}</h1>
     </div>
 
     <div class="flex center">
@@ -94,6 +123,17 @@ const clearForm = () => {
           @click:append-inner="visible = !visible"
           v-model="rawPass"
         ></v-text-field>
+
+        <v-btn
+          class="mb-8"
+          size="large"
+          variant="tonal"
+          block
+          @click="onSignUp"
+          v-if="isSignUpMode"
+        >
+          Sign up
+        </v-btn>
   
         <v-btn
           class="mb-8"
@@ -101,19 +141,17 @@ const clearForm = () => {
           variant="tonal"
           block
           @click="onLogin"
+          v-else
         >
           Log In
         </v-btn>
   
-        <v-card-text class="text-center" v-if="false">
-          <a
+        <v-card-text class="text-center" @click="isSignUpMode = !isSignUpMode" style="cursor: pointer;">
+          <p
             class="text-blue text-decoration-none"
-            href="#"
-            rel="noopener noreferrer"
-            target="_blank"
           >
-            Sign up now <v-icon icon="mdi-chevron-right"></v-icon>
-          </a>
+            {{ isSignUpMode ? "Log in " : "Sign up " }}now <v-icon icon="mdi-chevron-right"></v-icon>
+          </p>
         </v-card-text>
       </v-card>
     </div>
