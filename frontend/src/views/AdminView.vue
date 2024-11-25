@@ -940,12 +940,14 @@ const isShowDebug = ref(false);
                       :style="{background: setPanelColor(element)}"
                       height="100"
                       :class="drawer ? 'handle' : ''"
+                      class="flex"
                     >
-                      <p 
+                      <!-- <p 
                         class="label pa-5 py-10"
                         :style="(element.type === 'home' || element.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
-                        >
-                        {{ element.label }}&nbsp;
+                        > -->
+                      <p class="label-color ma-auto pa-1 px-2" v-if="element.label">
+                        {{ element.label }}
                       </p>
                     </v-card>
                   </div>
@@ -1109,6 +1111,13 @@ const isShowDebug = ref(false);
 
 .dark-mode {
   color: aliceblue;
+}
+
+.label-color {
+  align-self: flex-start;
+  background-color: rgb(23, 23, 23);
+  color: aliceblue;
+  border-radius: 10%;
 }
 
 </style>
