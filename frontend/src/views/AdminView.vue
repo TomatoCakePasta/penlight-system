@@ -392,6 +392,8 @@ const delPanel = () => {
   axios.post("/del-panel", data)
     .then((res) => {
       getAllPanels();
+      let changeId = selectedPanelId.value;
+      selectedPanelId.value = changeId - 1 >= 0 ? changeId - 1 : 0;
     })
     .catch((err) => {
 
