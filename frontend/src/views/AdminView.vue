@@ -813,7 +813,7 @@ const isShowDebug = ref(false);
                 v-if="(colorPanel[selectedPanelId].type_id === 3) || (colorPanel[selectedPanelId].type_id === 4)"
                 class="mb-5"
               >
-                <p class="sub-info">Speed {{ colorPanel[selectedPanelId].speed }}</p>
+                <p class="sub-info">Delay {{ colorPanel[selectedPanelId].speed }}</p>
                 <v-slider
                   v-model="colorPanel[selectedPanelId].speed"
                   max="200"

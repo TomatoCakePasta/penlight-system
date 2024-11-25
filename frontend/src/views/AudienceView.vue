@@ -85,6 +85,7 @@ const gradation = (newColor) => {
   const objColor = toRaw(newColor.color);
   const deg = newColor.deg;
   const speed = newColor.speed;
+  const angle = newColor.angle;
   const colLen = objColor.length;
 
   let col = [];
@@ -114,7 +115,7 @@ const gradation = (newColor) => {
   // 動的に生成するCSSを定義
   style.innerHTML = `
   .instant-gradation {
-    background: linear-gradient(270deg, ${gradientColors});
+    background: linear-gradient(${angle}deg, ${gradientColors});
     background-size: 600% 600%;
     -webkit-animation: AnimationName ${speed}s ease infinite;
     -moz-animation: AnimationName ${speed}s ease infinite;
