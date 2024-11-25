@@ -82,7 +82,7 @@ const panelType = ref([]);
 const editPanel = ref();
 
 const rules = {
-  required: (value) => !!value || "This field is required.",
+  required: (value) => !value || "This field is required.",
 }
 
 // 選択中のパネルを判別

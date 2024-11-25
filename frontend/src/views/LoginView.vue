@@ -14,6 +14,7 @@ const router = useRouter();
 
 const visible = ref(false);
 const isSignUpMode = ref(false);
+const isFormInvalid = ref(false);
 
 const name = ref("");
 const rawPass = ref("");
@@ -75,6 +76,18 @@ const clearForm = () => {
   rawPass.value = "";
 }
 
+const alphaNumericRule = (value) => {
+  // 先頭から末尾まで0字以上の文字が英数字か確認
+  if (/^[A-Za-z0-9]*$/.test(value)) {
+    isFormInvalid.value = false;
+    return true;
+  }
+  else {
+    isFormInvalid.value = true;
+    return "英数字のみ入力してください";
+  }
+}
+
 </script>
 
 <template>
@@ -104,6 +117,7 @@ const clearForm = () => {
           prepend-inner-icon="mdi-account-outline"
           variant="outlined"
           v-model="name"
+          :rules="[alphaNumericRule]"
         ></v-text-field>
 
         <div class="text-subtitle-1 text-medium-emphasis d-flex align-center justify-space-between">
@@ -122,6 +136,7 @@ const clearForm = () => {
           variant="outlined"
           @click:append-inner="visible = !visible"
           v-model="rawPass"
+          :rules="[alphaNumericRule]"
         ></v-text-field>
 
         <v-btn
@@ -130,6 +145,7 @@ const clearForm = () => {
           variant="tonal"
           block
           @click="onSignUp"
+          :disabled="isFormInvalid"
           v-if="isSignUpMode"
         >
           Sign up
@@ -141,12 +157,13 @@ const clearForm = () => {
           variant="tonal"
           block
           @click="onLogin"
+          :disabled="isFormInvalid"
           v-else
         >
           Log In
         </v-btn>
   
-        <v-card-text class="text-center" @click="isSignUpMode = !isSignUpMode" style="cursor: pointer;">
+        <v-card-text class="text-center" @click="isSignUpMode = !isSignUpMode; clearForm();" style="cursor: pointer;">
           <p
             class="text-blue text-decoration-none"
           >
