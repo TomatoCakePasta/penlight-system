@@ -2,6 +2,7 @@
 import { nextTick, ref, onMounted, toRaw } from "vue"
 import axios from "axios";
 import { useRouter } from "vue-router";
+import draggableComponent from "vuedraggable";
 
 const props = defineProps({
     socket: Object,
@@ -72,6 +73,36 @@ const colorPanelTest = [
     "subMsg": ""
   }
 ]
+
+const testLists = ref([
+  {
+    id: 1,
+    content: "Test1",
+  },
+  {
+    id: 2,
+    content: "Test2",
+  },
+  {
+    id: 3,
+    content: "Test3",
+  },
+  {
+    id: 4,
+    content: "Test4",
+  },
+  {
+    id: 5,
+    content: "Test5",
+  },
+  {
+    id: 6,
+    content: "Test6",
+  },
+])
+
+// vuedraggableのバージョンを確認してドキュメント通りにすれば動いた
+// https://www.npmjs.com/package/vuedraggable/v/next
 
 const colorPanel = ref();
 const songList = ref();
@@ -329,10 +360,11 @@ const changeTextToArray = () => {
 const saveColorPanel = () => {
   let datas = colorPanel.value;
 
-  datas.forEach((data) => {
+  datas.forEach((data, index) => {
     console.log("before"+data.color);
     data.color = data.color.join(",");
     console.log("after"+data.color);
+    data.sort_id = index + 1;
   })
 
   axios.post("/save-panel", datas)
@@ -889,8 +921,39 @@ const isShowDebug = ref(false);
           </div>
           <!-- リストでカラーパレット表示 -->
           <v-container>
-            <v-row>
-              <!-- TODO: sm=2,3が良きかも -->
+
+            <draggable-component v-model="colorPanel" item-key="panel_id" handle=".handle" tag="v-row">
+              <template #item="{element, index}">
+                <v-col 
+                  :key="index" 
+                  cols="6" 
+                  sm="4"
+                >
+                  <div 
+                    class="pa-2 panel"
+                    :class="{
+                      'selected': selectedPanelId === index
+                    }"
+                  >
+                    <v-card
+                      @click="onChangeLight(index, element)"
+                      :style="{background: setPanelColor(element)}"
+                      height="100"
+                      :class="drawer ? 'handle' : ''"
+                    >
+                      <p 
+                        class="label pa-5 py-10"
+                        :style="(element.type === 'home' || element.color[0] === '#000000') ? { background: 'gray', color: 'white' } : {}"
+                        >
+                        {{ element.label }}&nbsp;
+                      </p>
+                    </v-card>
+                  </div>
+                </v-col>     
+              </template>    
+            </draggable-component>
+
+            <!-- <v-row v-if="false">
               <v-col 
                 v-for="(panel, idx) in colorPanel" 
                 :key="idx" 
@@ -917,7 +980,7 @@ const isShowDebug = ref(false);
                   </v-card>
                 </div>
               </v-col>         
-            </v-row>
+            </v-row> -->
 
             <div class="mt-5 ml-2">
               <v-btn 
@@ -950,6 +1013,28 @@ const isShowDebug = ref(false);
               {{ typeList }}
             </p>
           </v-container>
+
+          <draggable-component v-model="colorPanel" item-key="id" handle=".handle" tag="v-row" v-if="false">
+              <template #item="{element, index}">
+                <v-col :key="element.id" cols="6" sm="4"> 
+                  <v-card class="sub-info handle">
+                    <span class="sub-info">ここを押せば動かせます。</span>
+                    {{ element }} {{ index }}
+                  </v-card>
+                </v-col>
+              </template>
+          </draggable-component>
+          <!-- <draggable-component v-model="testLists" group="people" item-key="id" handle=".handle">
+            <template #item="{element}">
+              <v-card class="drag-item sub-info handle">
+                <span class="sub-info">ここを押せば動かせます。</span>
+                {{ element.id }}
+              </v-card>
+            </template>
+          </draggable-component> -->
+          <p class="sub-info" v-if="false">
+            {{ testLists }}
+          </p>
         </div>
         <!-- フッター -->
         <p class="sub-info text-center">&copy; 2024 ShibaLab</p>
