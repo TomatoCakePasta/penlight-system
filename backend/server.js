@@ -140,7 +140,8 @@ app.post("/signup", (req, res) => {
     // ハッシュ化
     const hashedPass = bcrypt.hashSync(rawPass, 10);
 
-    console.log(name, rawPass, hashedPass);
+    console.log("POST SIGN UP");
+    // console.log(name, rawPass, hashedPass);
 
     // あらかじめ設定した規程ユーザか確認
     const query = `SELECT user_id FROM users WHERE name = ?`;
@@ -186,7 +187,8 @@ app.post("/login", (req, res) => {
 
     const query = `SELECT hashed_pass FROM users WHERE name = ?`;
 
-    console.log(name);
+    // console.log(name);
+    console.log("POST LOG IN");
 
     db.serialize(() => {
         // 一致するユーザのパスを取得
@@ -261,7 +263,8 @@ app.get("/panel/:id", (req, res) => {
 app.post("/save-panel", (req, res) => {    
     const panelsData = req.body;
 
-    console.log(panelsData);
+    // console.log(panelsData);
+    console.log("POST SAVE PANEL");
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
@@ -269,7 +272,7 @@ app.post("/save-panel", (req, res) => {
         panelsData.forEach((panel) => {
             const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = panel;
 
-            console.log(sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label );
+            // console.log(sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label );
 
             // 並び順の更新
             const query1 = `
@@ -370,7 +373,7 @@ app.post("/add-panel", (req, res) => {
     const { song_id } = req.body;
 
     console.log("add-panel");
-    console.log(song_id);
+    // console.log(song_id);
 
     const query = `SELECT COALESCE(MAX(sort_id), 0) AS sort_id FROM panels WHERE song_id = ?`;
 
@@ -383,7 +386,7 @@ app.post("/add-panel", (req, res) => {
                 return console.error("Failed to get sort_id", err);
             }
 
-            console.log("sort_id:", res2.sort_id);
+            // console.log("sort_id:", res2.sort_id);
 
             const query2 = `INSERT INTO panels (sort_id, song_id) VALUES(?, ?)`;
 
@@ -451,7 +454,7 @@ app.post("/add-song", (req, res) => {
     const query = `SELECT COALESCE(MAX(sort_id), 0) AS sort_id FROM songs`;
 
     console.log("POST ADD SONG");
-    console.log(title, artist);
+    // console.log(title, artist);
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
@@ -462,7 +465,7 @@ app.post("/add-song", (req, res) => {
                 return console.error("Failed to get sort_id", err);
             }
 
-            console.log("sort_id:", res2.sort_id);
+            // console.log("sort_id:", res2.sort_id);
 
             const query2 = `INSERT INTO songs (sort_id, title, artist) VALUES(?, ?, ?)`;
 
@@ -483,12 +486,50 @@ app.post("/add-song", (req, res) => {
     })
 })
 
+// 並び順更新
+app.post("/save-song-sort", (req, res) => {
+    const songsData = req.body;
+
+    // console.log(songsData);
+    console.log("POST SAVE SORT SONG");
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        
+        songsData.forEach((song) => {
+            const { sort_id, song_id} = song;
+
+            // console.log(sort_id, song_id);
+
+            // 並び順の更新
+            const query1 = `
+                            UPDATE songs
+                            SET sort_id = ?
+                            WHERE song_id = ?
+                        `;
+
+            db.run(query1, [ sort_id, song_id ]);
+        });
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                console.error("ERROR: ", err);
+                res.status(500).send("SERVER ERROR");
+            }
+            else {
+                res.status(200).send("UPDATED DATA");
+            }
+        });
+    });
+
+});
+
 // セットリスト更新
 app.post("/save-song", (req, res) => {
     const { song_id, title, artist, sort_id } = req.body;
 
     console.log("POST SAVE SONG");
-    console.log(song_id, title, artist, sort_id);
+    // console.log(song_id, title, artist, sort_id);
 
     // 指定idのレコードを更新
     db.serialize(() => {

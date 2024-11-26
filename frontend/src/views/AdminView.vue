@@ -143,6 +143,11 @@ const socket = props.socket;
 const drawer = ref(false);
 
 /**
+ * セットリスト並べ替え
+ */
+const isSortSong = ref(false);
+
+/**
  * 保存メッセージのスナックバー
  */
 const snackBar = ref(false);
@@ -457,6 +462,26 @@ const saveSong = () => {
 }
 
 /**
+ * 並び順更新
+ */
+const saveSongSort = () => {
+  let datas = songList.value;
+
+  datas.forEach((data, index) => {
+    data.sort_id = index + 1;
+  });
+
+  axios.post("/save-song-sort", datas)
+    .then((res) => {
+        // 再度DBを読み込み
+        getAllSongs();
+      })
+      .catch((err) => {
+
+      });
+}
+
+/**
  * セットリスト追加
  */
 const addSong = () => {
@@ -495,6 +520,22 @@ const delSong = () => {
     .catch((err) => {
 
     })
+}
+
+/**
+ * セットリスト並び更新
+ */
+const onSortSong = () => {
+  // ソートを保存
+  if (isSortSong.value) {
+    saveSongSort();
+
+    isSortSong.value = false;
+  }
+  // ソートモードに変更
+  else {
+    isSortSong.value = true;
+  }
 }
 
 const isShowDebug = ref(false);
@@ -541,28 +582,35 @@ const isShowDebug = ref(false);
         <!-- セットリスト -->
         <div v-if="isShowSongList">
           <v-list>
-            <v-list-item
-              v-for="(song, index) in songList"
-              :key="index"
-              link
-              @click="onChangeSong(song)"
+            <draggable-component 
+              v-model="songList" 
+              item-key="id" 
+              handle=".handle"
             >
-              <v-list-item-content class="">
-                <div class="ml-10">
-                  <v-list-item-title class="pt-3 flex">
-                    <p>
-                      {{ index + 1 }}.&nbsp;
-                    </p>
-                    <p>
-                      {{ song.title }}
-                    </p>
-                  </v-list-item-title>
-                  <p class="sub-info">
-                    {{ song.artist }}
-                  </p>
-                </div>
-              </v-list-item-content>
-            </v-list-item>
+              <template #item="{element, index}">
+                <v-list-item
+                  :key="element.song_id"
+                  link
+                  @click="onChangeSong(element)"
+                >
+                  <v-list-item-content :class="isSortSong ? 'handle' : ''">
+                    <div class="ml-10">
+                      <v-list-item-title class="pt-3 flex">
+                        <p>
+                          {{ index + 1 }}.&nbsp;
+                        </p>
+                        <p>
+                          {{ element.title }}
+                        </p>
+                      </v-list-item-title>
+                      <p class="sub-info">
+                        {{ element.artist }}
+                      </p>
+                    </div>
+                  </v-list-item-content>
+                </v-list-item>
+              </template>
+            </draggable-component>
 
             <!-- セットリスト修正 -->
             <v-dialog
@@ -716,6 +764,23 @@ const isShowDebug = ref(false);
                   <v-list-item-title class="pt-3 flex">
                     <p class="pop-msg pb-4">
                       Delete Song
+                    </p>
+                  </v-list-item-title>
+                </div>
+              </v-list-item-content>
+            </v-list-item>
+
+            <!-- セットリスト並べ替え -->
+            <v-list-item
+              link
+              class="song-list"
+              @click="onSortSong"
+            >
+              <v-list-item-content>
+                <div class="ml-10 sub-info">
+                  <v-list-item-title class="pt-3 flex">
+                    <p class="pop-msg pb-4">
+                      {{ isSortSong ? "Save Song" : "Sort Song" }}
                     </p>
                   </v-list-item-title>
                 </div>
@@ -925,7 +990,7 @@ const isShowDebug = ref(false);
             <draggable-component v-model="colorPanel" item-key="panel_id" handle=".handle" tag="v-row">
               <template #item="{element, index}">
                 <v-col 
-                  :key="index" 
+                  :key="element.panel_id" 
                   cols="6" 
                   sm="4"
                 >
@@ -1016,13 +1081,17 @@ const isShowDebug = ref(false);
             </p>
           </v-container>
 
-          <draggable-component v-model="colorPanel" item-key="id" handle=".handle" tag="v-row" v-if="false">
+          <draggable-component v-model="testLists" item-key="id" handle=".handle" tag="v-row" v-if="false">
               <template #item="{element, index}">
                 <v-col :key="element.id" cols="6" sm="4"> 
-                  <v-card class="sub-info handle">
-                    <span class="sub-info">ここを押せば動かせます。</span>
-                    {{ element }} {{ index }}
-                  </v-card>
+                  <div>
+                    <v-card class="sub-info handle">
+                      <span class="sub-info">ここを押せば動かせます。</span>
+                      <p>
+                        {{ element }} {{ index }}
+                      </p>
+                    </v-card>
+                  </div>
                 </v-col>
               </template>
           </draggable-component>
@@ -1119,5 +1188,4 @@ const isShowDebug = ref(false);
   color: aliceblue;
   border-radius: 10%;
 }
-
 </style>
