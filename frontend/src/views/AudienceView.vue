@@ -112,11 +112,16 @@ const gradation = (newColor) => {
   // HACK: これだとstyleがどんどん追加されて無駄に蓄積
   // <style>タグ内のinstant-gradatioを毎回削除してから再度新しい内容で生成したい
 
+  const test_img = '../../public/imgs/artist.jpg';
+
   // 動的に生成するCSSを定義
   style.innerHTML = `
   .instant-gradation {
-    background: linear-gradient(${angle}deg, ${gradientColors});
-    background-size: 600% 600%;
+    background: 
+      linear-gradient(${angle}deg, ${gradientColors}),
+      url('${test_img}');
+    background-size: 600% 600%, cover; /* 画像はcover */
+    background-position: 0% 50%, center; /* グラデーションはアニメーション, 画像は固定 */
     -webkit-animation: AnimationName ${speed}s ease infinite;
     -moz-animation: AnimationName ${speed}s ease infinite;
     animation: AnimationName ${speed}s ease infinite;
@@ -166,7 +171,7 @@ const onTestChange = () => {
 <template>
   <div
     id="back-monitor"
-    class="home user-select-none"
+    class="home user-select-none bg_test"
     :style="{ backgroundColor: lightColor }"
   >
     <div class="title pt-16">
