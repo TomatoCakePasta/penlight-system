@@ -548,11 +548,24 @@ const addSong = () => {
  * セットリスト削除
  */
 const delSong = () => {
+  let image_names = [];
+
+  colorPanel.value.forEach((panel, index) => {
+    if (panel.image_name !== "") {
+      image_names.push(panel.image_name);
+    }
+  })
+
+  console.log("images", image_names);
+
   // TODO: 画像だけの配列を入れる
   // server側でforぶん回してfsで削除
   const data = {
-    song_id: selectedDelSongId.value
+    song_id: selectedDelSongId.value,
+    image_names: image_names
   }
+
+  console.log(data);
 
   axios.post("/del-song", data)
     .then((res) => {

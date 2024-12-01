@@ -623,13 +623,25 @@ app.post("/save-song", (req, res) => {
 // セットリスト削除
 app.post("/del-song", (req, res) => {
     const { song_id } = req.body;
+    const image_namses = req.body.image_names;
 
     const query = `DELETE FROM songs WHERE song_id = ?`;
 
     console.log("POST DEL SONG");
 
-    // TODO: 保存した画像も削除
+    console.log(image_namses);
 
+    image_namses.forEach((image_name) => {
+        fs.unlink(`images/${ image_name }`, (err) => {
+            if (err) {
+                console.error("Failed to delete image files", err);
+            }
+            console.log("Delete ", image_name);
+        });
+    })
+
+    console.log("Run delete song query");
+    // TODO: 保存した画像も削除
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
 
