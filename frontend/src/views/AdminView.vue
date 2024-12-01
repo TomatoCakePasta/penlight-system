@@ -312,6 +312,9 @@ const getAllPanels = () => {
     changeTextToArray();
     console.log(colorPanel.value);
 
+    // 各要素に画像形式データを保持するプロパティを用意
+    setImageDataPorperty();
+
     // colorPanel.value.map((colorObj, idx) => setPanelColor(colorObj, idx));
     console.log("panelType");
     console.log(panelType.value);
@@ -359,20 +362,37 @@ const changeTextToArray = () => {
   }
 }
 
+const setImageDataPorperty = () => {
+  for (let i = 0; i < colorPanel.value.length; i++) {
+    colorPanel.value[i].imageData = '';
+  }
+}
+
 /**
  * パネルDB更新 colorPanelでパネル情報を送信
  */
 const saveColorPanel = () => {
   let datas = colorPanel.value;
 
+  let formData = new FormData();
+
   datas.forEach((data, index) => {
     console.log("before"+data.color);
     data.color = data.color.join(",");
     console.log("after"+data.color);
     data.sort_id = index + 1;
+    data.image_name = data.imageData.name ? `${data.panel_id}_${data.imageData.name}` : '';
+
+    if (data.imageData) {
+      // data.picはFileオブジェクト
+      // nameでファイル名を取得
+      formData.append("image", data.imageData, encodeURIComponent(`${data.panel_id}_${data.imageData.name}`));
+    }
   })
 
-  axios.post("/save-panel", datas)
+  formData.append("data", JSON.stringify(datas));
+
+  axios.post("/save-panel", formData)
     .then((res) => {
       // 再度DBを読み込み
       getAllPanels();
@@ -435,6 +455,22 @@ const delPanel = () => {
     .catch((err) => {
 
     })
+}
+
+const delImage = () => {
+
+  // フォームをクリア
+  colorPanel.value[selectedPanelId.value].image_name = "";
+  colorPanel.value[selectedPanelId.value].imageData = null;
+  
+  // axios.post("/del-pic", data)
+  //   .then((res) => {
+  //     // フォームをクリアにする
+  //     colorPanel.value[selectedPanelId].pic = "";
+  //   })
+  //   .catch((err) => {
+
+  //   })
 }
 
 /**
@@ -869,6 +905,32 @@ const isShowDebug = ref(false);
           >
           </v-text-field>
 
+          <v-file-input 
+            label="Image input" 
+            prepend-icon="" 
+            class="ml-3 mr-3"
+            v-model="colorPanel[selectedPanelId].imageData"
+            v-if="!colorPanel[selectedPanelId].image_name"
+          ></v-file-input>
+
+          <v-col col="1">
+            <div class="flex mb-3" v-if="colorPanel[selectedPanelId].image_name">
+              <v-card class="flex-grow-1 flex pic-form">
+                <p class="ml-auto mr-auto sub-info">
+                  Selected [ {{ colorPanel[selectedPanelId].image_name }} ]
+                </p>
+              </v-card>
+              <v-btn 
+                variant="text" 
+                class="ml-2" 
+                height="30" 
+                width="30" 
+                icon="mdi-window-close"
+                @click="delImage"
+              ></v-btn>
+            </div>
+          </v-col>
+
           <v-row>
             <v-col                 
               class="ml-3 mr-3"
@@ -1187,5 +1249,9 @@ const isShowDebug = ref(false);
   background-color: rgb(23, 23, 23);
   color: aliceblue;
   border-radius: 10%;
+}
+
+.pic-form {
+  background-color: rgba(0, 0, 0, 0);
 }
 </style>

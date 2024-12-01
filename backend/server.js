@@ -7,6 +7,7 @@ import https from "https";
 import fs from 'fs';
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import multer from 'multer';
 
 // ********* 重要 ************
 // SSL証明書は3ヶ月で切れるから更新必須
@@ -98,6 +99,19 @@ const io = new Server(server, {
         credentials: true // 認証情報の送信を許可する場合はtrueに設定
     }
 });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "images/");
+    },
+    filename: (req, file, cb) => {
+        const decodeName = decodeURIComponent(file.originalname);
+        cb(null, decodeName);
+    }
+})
+
+// 画像
+const upload = multer({ storage });
 
 app.get('/', (req, res) => {
     console.log("HOME URL");
@@ -228,6 +242,7 @@ app.get("/panel/:id", (req, res) => {
                         color,
                         message,
                         sub_message,
+                        image_name,
                         speed,
                         angle,
                         label,
@@ -260,8 +275,13 @@ app.get("/panel/:id", (req, res) => {
 });
 
 // パネル更新
-app.post("/save-panel", (req, res) => {    
-    const panelsData = req.body;
+app.post("/save-panel", upload.array("image"), (req, res) => {    
+    const panelsData = JSON.parse(req.body.data);
+
+    const files = req.files;
+
+    console.log(panelsData);
+    console.log(files);
 
     // console.log(panelsData);
     console.log("POST SAVE PANEL");
@@ -270,7 +290,7 @@ app.post("/save-panel", (req, res) => {
         db.run("BEGIN TRANSACTION");
         
         panelsData.forEach((panel) => {
-            const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label } = panel;
+            const { sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label, image_name } = panel;
 
             // console.log(sort_id, panel_id, type_id, color, message, sub_message, speed, angle, label );
 
@@ -293,11 +313,12 @@ app.post("/save-panel", (req, res) => {
                                 sub_message = ?,
                                 speed = ?,
                                 angle = ?,
-                                label = ?
+                                label = ?,
+                                image_name = ?
                             WHERE panel_id = ?
                         `;
 
-            db.run(query2, [ type_id, color, message, sub_message, speed, angle, label, panel_id ]);
+            db.run(query2, [ type_id, color, message, sub_message, speed, angle, label, image_name, panel_id ]);
         });
 
         db.run("COMMIT", (err) => {
@@ -310,7 +331,10 @@ app.post("/save-panel", (req, res) => {
             }
         });
     });
-    
+});
+
+app.post("/del-image", (req, res) => {
+
 });
 
 app.get("/song-list", (req, res) => {
@@ -409,6 +433,7 @@ app.post("/add-panel", (req, res) => {
 });
 
 // パネル削除
+// TODO: 画像も消す
 app.post("/del-panel", (req, res) => {
     const { panel_id } = req.body;
 
