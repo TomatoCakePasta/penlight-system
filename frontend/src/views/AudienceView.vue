@@ -3,11 +3,15 @@ import { onMounted, ref, toRaw } from "vue"
 
 const props = defineProps({
     socket: Object,
+    url: String
 });
 
 const lightColor = ref("black")
 const msg = ref("DJ LIVE 2/16");
 const subMsg = ref("Coming soon ...");
+const imageUrl = ref("");
+const path = `${props.url}/images/`;
+const imageName = ref("");
 
 const socket = props.socket;
 const isFlash = ref(false);
@@ -31,6 +35,9 @@ socket.on("changeColor", (newColor) => {
   lightColor.value = plainNewColor.color[0];
   msg.value = plainNewColor.message;
   subMsg.value = plainNewColor.sub_message;
+  imageUrl.value =  plainNewColor.image_name ? `${path}${plainNewColor.image_name}` : "";
+
+  console.log("url",imageUrl.value);
 
   // 各種モード
   switch(plainNewColor.type) {
@@ -42,10 +49,52 @@ socket.on("changeColor", (newColor) => {
       gradation(plainNewColor);
       break;
 
+    case "normal":
+      normal(plainNewColor);
+      break;
+
     default:
       break;
   }
 });
+
+/**
+ * 単色モード
+ */
+const normal = (newColor) => {
+
+  const element = document.getElementById("back-monitor");
+
+  // 前についているグラデーションの動的なクラスを削除
+  element.classList.remove("instant-gradation");
+
+  // 新しい<style>要素を作成
+  const style = document.createElement('style');
+
+  console.log("normal:", newColor.color[0]);
+
+  // 擬似的にアニメーションを停止
+  const speed = 100000;
+
+  // 動的に生成するCSSを定義
+  style.innerHTML = `
+  .instant-gradation {
+    background: 
+      url('${imageUrl.value}');
+    background-size: cover;
+    background-position: center;
+    -webkit-animation: AnimationName ${speed}s ease infinite;
+    -moz-animation: AnimationName ${speed}s ease infinite;
+    animation: AnimationName ${speed}s ease infinite;
+  `;
+
+  // <head>に<style>要素を追加
+  document.head.appendChild(style);
+
+  // クラスを付加
+  element.classList.add("instant-gradation");
+
+};
 
 /**
  * 高速点滅モード
@@ -112,14 +161,16 @@ const gradation = (newColor) => {
   // HACK: これだとstyleがどんどん追加されて無駄に蓄積
   // <style>タグ内のinstant-gradatioを毎回削除してから再度新しい内容で生成したい
 
-  const test_img = '../../public/imgs/artist.jpg';
+  // const test_img = '../../public/imgs/artist.jpg';
+
+  // console.log(imageUrl.value);
 
   // 動的に生成するCSSを定義
   style.innerHTML = `
   .instant-gradation {
     background: 
       linear-gradient(${angle}deg, ${gradientColors}),
-      url('${test_img}');
+      url('${imageUrl.value}');
     background-size: 600% 600%, cover; /* 画像はcover */
     background-position: 0% 50%, center; /* グラデーションはアニメーション, 画像は固定 */
     -webkit-animation: AnimationName ${speed}s ease infinite;
@@ -133,6 +184,26 @@ const gradation = (newColor) => {
     100% { background-position: 0% 50%; }
   }
   `;
+
+  // 動的に生成するCSSを定義
+  // style.innerHTML = `
+  // .instant-gradation {
+  //   background: 
+  //     linear-gradient(${angle}deg, ${gradientColors}),
+  //     url('${imageUrl.value}');
+  //   background-size: 600% 600%, cover; /* 画像はcover */
+  //   background-position: 0% 50%, center; /* グラデーションはアニメーション, 画像は固定 */
+  //   -webkit-animation: AnimationName ${speed}s ease infinite;
+  //   -moz-animation: AnimationName ${speed}s ease infinite;
+  //   animation: AnimationName ${speed}s ease infinite;
+  // }
+  
+  // @keyframes AnimationName {
+  //   0% { background-position: 0% 50%; }
+  //   50% { background-position: 100% 50%; }
+  //   100% { background-position: 0% 50%; }
+  // }
+  // `;
 
   // <head>に<style>要素を追加
   document.head.appendChild(style);
@@ -172,10 +243,14 @@ const onTestChange = () => {
   <div
     id="back-monitor"
     class="home user-select-none bg_test"
-    :style="{ backgroundColor: lightColor }"
+    :style="{ 
+      backgroundColor: lightColor,
+      // backgroundImage: imageUrl ? `url('${imageUrl}')` : 'none',
+      }"
   >
     <div class="title pt-16">
       <h1>{{ msg }}</h1>
+      <!-- <img :src="imageUrl" alt="" style="object-fit: cover;"> -->
       <!-- <p>{{ subMsg }}</p> -->
     </div>
     <h1 v-if="subMsg" class="title loading">

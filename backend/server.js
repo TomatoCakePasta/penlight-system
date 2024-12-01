@@ -8,6 +8,8 @@ import fs from 'fs';
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import multer from 'multer';
+import path from "path";
+import { fileURLToPath } from "url";
 
 // ********* 重要 ************
 // SSL証明書は3ヶ月で切れるから更新必須
@@ -45,6 +47,13 @@ const db = new sqlite3.Database("./panel_data.db", (err) => {
 
 // 接続中のユーザー
 let countUser = 0;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 静的ファイルを提供
+// パス名はカレントディレクトリにimagesを追記したパス
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 // ミドルウェア
 app.use(cors({
@@ -334,7 +343,29 @@ app.post("/save-panel", upload.array("image"), (req, res) => {
 });
 
 app.post("/del-image", (req, res) => {
+    const { panel_id, image_name } = req.body;
 
+    console.log("POST del-image");
+
+    fs.unlink(`images/${ image_name }`, (err) => {
+        if (err) {
+            console.error("Failed to delete image:", err);
+        }
+
+        const query1 = `
+            UPDATE panels
+            SET image_name = ?
+            WHERE panel_id = ?
+        `;
+
+        db.run(query1, [ '', panel_id ], (err) => {
+            if (err) {
+                console.error("Failed to clear image_name:", err);
+            }
+            res.send({ flag: true });
+        });
+
+    });
 });
 
 app.get("/song-list", (req, res) => {
@@ -435,13 +466,19 @@ app.post("/add-panel", (req, res) => {
 // パネル削除
 // TODO: 画像も消す
 app.post("/del-panel", (req, res) => {
-    const { panel_id } = req.body;
+    const { panel_id, image_name } = req.body;
 
     const query = `DELETE FROM panels WHERE panel_id = ?`;
 
     // const query = `DELETE FROM panels WHERE panel_id = ?`;
 
     console.log("DEL PANEL", panel_id)
+
+    fs.unlink(`images/${ image_name }`, (err) => {
+        if (err) {
+            console.error("Failed to delete image:", err);
+        }
+    });
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");
@@ -590,6 +627,8 @@ app.post("/del-song", (req, res) => {
     const query = `DELETE FROM songs WHERE song_id = ?`;
 
     console.log("POST DEL SONG");
+
+    // TODO: 保存した画像も削除
 
     db.serialize(() => {
         db.run("BEGIN TRANSACTION");

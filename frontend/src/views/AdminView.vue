@@ -381,7 +381,7 @@ const saveColorPanel = () => {
     data.color = data.color.join(",");
     console.log("after"+data.color);
     data.sort_id = index + 1;
-    data.image_name = data.imageData.name ? `${data.panel_id}_${data.imageData.name}` : '';
+    data.image_name = data.imageData.name ? `${data.panel_id}_${data.imageData.name}` : data.image_name;
 
     if (data.imageData) {
       // data.picはFileオブジェクト
@@ -441,7 +441,8 @@ const addPanel = () => {
 
 const delPanel = () => {
   const data = {
-    panel_id: colorPanel.value[selectedPanelId.value].panel_id
+    panel_id: colorPanel.value[selectedPanelId.value].panel_id,
+    image_name: colorPanel.value[selectedPanelId.value].image_name
   }
 
   isOpenDeleteDialog.value = false;
@@ -457,20 +458,25 @@ const delPanel = () => {
     })
 }
 
+/**
+ * 画像を削除
+ */
 const delImage = () => {
 
-  // フォームをクリア
-  colorPanel.value[selectedPanelId.value].image_name = "";
-  colorPanel.value[selectedPanelId.value].imageData = null;
+  const data = {
+    panel_id: colorPanel.value[selectedPanelId.value].panel_id,
+    image_name: colorPanel.value[selectedPanelId.value].image_name
+  }
   
-  // axios.post("/del-pic", data)
-  //   .then((res) => {
-  //     // フォームをクリアにする
-  //     colorPanel.value[selectedPanelId].pic = "";
-  //   })
-  //   .catch((err) => {
+  axios.post("/del-image", data)
+    .then((res) => {
+      // フォームをクリア
+      colorPanel.value[selectedPanelId.value].image_name = "";
+      colorPanel.value[selectedPanelId.value].imageData = null;
+    })
+    .catch((err) => {
 
-  //   })
+    })
 }
 
 /**
@@ -542,6 +548,8 @@ const addSong = () => {
  * セットリスト削除
  */
 const delSong = () => {
+  // TODO: 画像だけの配列を入れる
+  // server側でforぶん回してfsで削除
   const data = {
     song_id: selectedDelSongId.value
   }

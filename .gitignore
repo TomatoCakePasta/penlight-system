@@ -33,5 +33,5 @@ coverage
 *.db
 *.env
 *.env.production
-frontend/public/imgs/
+frontend/public/images/
 backend/images/
