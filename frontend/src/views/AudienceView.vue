@@ -23,7 +23,7 @@ onMounted(() => {
 let currentInterval;
 let plainNewColor;
 
-socket.on("changeColor", (newColor) => {
+socket.on("changeColor", ([newColor, date]) => {
   isFlash.value = false;
   console.log("Change color");
   console.log(newColor);

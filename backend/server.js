@@ -141,8 +141,9 @@ io.on("connection", (socket) => {
 
     socket.on("changeColor", (newColor) => {
          console.log("Change Color");
+         const date = Date.now();
         // console.log("GET changeColor : ", newColor);
-        io.emit("changeColor", newColor);
+        io.emit("changeColor", [newColor, date]);
     })
 
     socket.on("disconnect", () => {
