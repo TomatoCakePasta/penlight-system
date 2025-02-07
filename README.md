@@ -5,12 +5,17 @@
 # DEMO
 
 * お客さんは事前配布のQRなどからサイトにアクセス
-* ライブが始まるとオペレータが制御する
+* ライブが始まるとオペレータが開錠の全ての端末を制御し一体感を演出
 
 https://github.com/user-attachments/assets/aea8f809-e462-411e-b25d-610f8c83c254
 
 性能: 100クライアントで最大9msほどで動作  
 端末: スマホ, タブレット, PC全て可
+
+イメージ  
+
+![luminor_image](https://github.com/user-attachments/assets/3a493ebc-0cbb-4293-863f-43cf99600199)
+
 
 # Features
 「通信」をエンターテインメントに応用  
